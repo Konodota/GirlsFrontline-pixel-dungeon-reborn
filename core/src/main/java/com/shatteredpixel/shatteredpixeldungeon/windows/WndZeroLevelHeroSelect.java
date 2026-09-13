@@ -18,7 +18,6 @@ import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
 import com.watabou.noosa.ColorBlock;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.Image;
-import com.watabou.utils.DeviceCompat;
 
 import java.util.ArrayList;
 
@@ -65,7 +64,6 @@ public class WndZeroLevelHeroSelect extends Window {
 
 		for (HeroClass cl : HeroClass.values()){
 			if (cl == HeroClass.NONE || cl == HeroClass.PUBLIC_1) continue;
-			if (cl == HeroClass.HK416 && !DeviceCompat.isDebug()) continue;
 			visibleClasses.add(cl);
 		}
 		totalPages = (int)Math.ceil((float)visibleClasses.size() / ROLES_PER_PAGE);

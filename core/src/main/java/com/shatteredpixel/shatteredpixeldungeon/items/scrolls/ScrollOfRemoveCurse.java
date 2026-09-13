@@ -21,6 +21,7 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items.scrolls;
 
+import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Degrade;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Belongings;
@@ -64,6 +65,8 @@ public class ScrollOfRemoveCurse extends InventoryScroll {
 
 	@Override
 	protected void onItemSelected(Item item) {
+		//使用疫苗磁盘解锁GSH18
+		Badges.validateGSH18Unlock();
 		new Flare( 6, 32 ).show( curUser.sprite, 2f ) ;
 
 		boolean procced = uncurse( curUser, item );

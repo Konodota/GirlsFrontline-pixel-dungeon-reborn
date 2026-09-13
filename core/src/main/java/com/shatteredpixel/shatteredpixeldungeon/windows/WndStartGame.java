@@ -123,8 +123,6 @@ public class WndStartGame extends Window {
 		visibleClasses = new ArrayList<>();
 		for (HeroClass cl : HeroClass.values()) {
 			if (cl != HeroClass.NONE && cl != HeroClass.PUBLIC_1) {
-				// HK416仅在debug版本显示
-				if (cl == HeroClass.HK416 && !DeviceCompat.isDebug()) continue;
 				visibleClasses.add(cl);
 			}
 		}

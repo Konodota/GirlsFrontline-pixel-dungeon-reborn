@@ -21,6 +21,7 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items.food;
 
+import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Hunger;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.WellFed;
@@ -41,6 +42,8 @@ public class MeatPie extends Food {
 	protected void satisfy(Hero hero) {
 		super.satisfy( hero );
 		Buff.affect(hero, WellFed.class).reset();
+		//使用（食用）全肉大饼解锁56-1式
+		Badges.validateType561Unlock();
 	}
 	
 	public static class Recipe extends com.shatteredpixel.shatteredpixeldungeon.items.Recipe {

@@ -455,13 +455,7 @@ public class Badges {
 	
 	public static void validateFoodEaten() {
 		Badge badge = null;
-		
-		// 检查一局内吃3个食物解锁type561角色
-        //考虑修改成制作全肉大饼，尚未更改
-		if (!isUnlocked(Badge.UNLOCK_TYPE561) && Statistics.foodEaten >= 3) {
-			validateType561Unlock();
-		}
-		
+
 		if (!isUnlocked(Badge.UNLOCK_WARRIOR) && Statistics.foodEaten >= 1) {
 			displayBadge(Badge.UNLOCK_WARRIOR);
 		}
@@ -688,20 +682,7 @@ public class Badges {
 		if (badge != null) {
 			local.add( badge );
 			displayBadge( badge );
-			
-			// 击败10层BOSS时解锁GSH18角色
-			if (badge == Badge.BOSS_SLAIN_2 && !isUnlocked(Badge.UNLOCK_GSH18)) {
-				displayBadge(Badge.UNLOCK_GSH18);
-			}
-			// 击败10层BOSS时同时解锁HK416角色（占位解锁条件）
-			if (badge == Badge.BOSS_SLAIN_2 && !isUnlocked(Badge.UNLOCK_HK416)) {
-				displayBadge(Badge.UNLOCK_HK416);
-			}
-			// 击败10层BOSS时同时解锁Dandelion角色（占位解锁条件）
-			if (badge == Badge.BOSS_SLAIN_2 && !isUnlocked(Badge.UNLOCK_DANDELION)) {
-				displayBadge(Badge.UNLOCK_DANDELION);
-			}
-			
+
 			if (badge == Badge.BOSS_SLAIN_1) {
 				switch (Dungeon.hero.heroClass) {
 				case WARRIOR:
@@ -837,7 +818,6 @@ public class Badges {
         displayBadge( Badge.UNLOCK_HUNTRESS);
         displayBadge( Badge.UNLOCK_TYPE561);
         displayBadge( Badge.UNLOCK_GSH18);
-        displayBadge( Badge.UNLOCK_HK416);
         displayBadge( Badge.UNLOCK_DANDELION);
     }
 	public static void validateMageUnlock(){
@@ -859,7 +839,15 @@ public class Badges {
 	}
 
 	public static void validateType561Unlock(){
-		displayBadge(Badge.UNLOCK_TYPE561);
+		if (!isUnlocked(Badge.UNLOCK_TYPE561)){
+			displayBadge(Badge.UNLOCK_TYPE561);
+		}
+	}
+
+	public static void validateGSH18Unlock(){
+		if (!isUnlocked(Badge.UNLOCK_GSH18)){
+			displayBadge(Badge.UNLOCK_GSH18);
+		}
 	}
     public static void AllEquipmentDegrade(){
         displayBadge(Badge.Degrade_Equipment);
@@ -965,6 +953,10 @@ public class Badges {
 	
 	public static void validateHappyEnd() {
 		displayBadge( Badge.HAPPY_END );
+		//返程（完美结局）时解锁丹德莱
+		if (!isUnlocked( Badge.UNLOCK_DANDELION )){
+			displayBadge( Badge.UNLOCK_DANDELION );
+		}
 	}
 	
 	public static void validateElpheltKilled() {
