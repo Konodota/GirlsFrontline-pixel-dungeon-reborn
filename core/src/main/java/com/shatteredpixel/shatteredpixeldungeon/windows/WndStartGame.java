@@ -502,6 +502,11 @@ public class WndStartGame extends Window {
 					// 每行显示4个角色，多出来的换行
 					int row = cl.ordinal() / 4;
 					int col = cl.ordinal() % 4;
+					if (cl == HeroClass.HK416) {
+						//TODO:占位HK416暂用现在HK416形象的头像（隼槽位），待新角色立绘完成后替换
+						row = 0;
+						col = 3;
+					}
 					avatar.frame(col * 24, row * 32, 24, 32);
 
 					name.text(Messages.capitalize(cl.title()));

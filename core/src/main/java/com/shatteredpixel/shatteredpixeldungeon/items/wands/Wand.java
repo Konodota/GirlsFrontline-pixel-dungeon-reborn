@@ -747,15 +747,13 @@ public abstract class Wand extends Item {
 				partialCharge += (1f/turnsToCharge) * RingOfEnergy.wandChargeMultiplier(target);
 
 
+			float i = CHARGE_BUFF_BONUS;
+			if (curCharges < 0)
+				i = 1 / (1/i - curCharges);
+
 			for (Recharging bonus : target.buffs(Recharging.class)){
 				if (bonus != null && bonus.remainder() > 0f) {
-					partialCharge += CHARGE_BUFF_BONUS * bonus.remainder();
-                    if (curCharges < 0) {
-                        float partial = 1 / partialCharge;
-                        partial-=curCharges;
-                        partialCharge = 1/partial;
-                    }
-
+					partialCharge += i * bonus.remainder();
 				}
 			}
 		}

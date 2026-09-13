@@ -153,7 +153,7 @@ public class WndSelectGameInProgress extends Window {
 					order = 6;
 					break;
 				case HK416:
-					order = 3;
+					order = 4;
 					break;
 				case Dandelion:
 					order = 7;

@@ -101,7 +101,7 @@ public class SeedFindScene extends PixelScene {
                                 case "UMP9":
                                     heroclass = HeroClass.ROGUE;
                                     break;
-                                case "HK416":
+                                case "隼":
                                     heroclass = HeroClass.HUNTRESS;
                                     break;
                                 case "56-1式":
