@@ -395,7 +395,10 @@ abstract public class Weapon extends KindOfWeapon {
                 level += Dungeon.hero.hasTalent(Talent.Type56FourTwoTwo)
 						? Dungeon.hero.pointsInTalent(Talent.Type56FourTwoTwo)
 						: 1;
-			level += RingOfKing.updateMultiplier(hero);
+			//超频瞄准镜不提升投掷武器的虚拟等级
+			if (!(this instanceof MissileWeapon)) {
+				level += RingOfKing.updateMultiplier(hero);
+			}
 			// GSH18天赋：伴星同调——未来之星副武器有效等级向主武器看齐（实现见 GSH18Talent）
 			level += GSH18Talent.companionStarSyncBonus(hero, this);
 		}
