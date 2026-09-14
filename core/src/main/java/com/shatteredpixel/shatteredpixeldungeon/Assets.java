@@ -162,6 +162,7 @@ public class Assets {
 		public static final String UPBARS  = "interfaces/progress.png";
 		public static final String DOWNLOAD    = "interfaces/downloadbar.png";
 		public static final String LOADING  = "interfaces/loading.png";
+		public static final String ZEROSHOP_UI = "interfaces/ZeroshopUI.png";
 	}
 
 	//these points to resource bundles, not raw asset files

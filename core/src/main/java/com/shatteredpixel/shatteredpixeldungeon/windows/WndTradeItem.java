@@ -229,7 +229,8 @@ public class WndTradeItem extends WndInfoItem {
 		int randomPos = -1;
 		if (Dungeon.level instanceof RegularLevel){
 			ShopRoom room = ((RegularLevel) Dungeon.level).getRoom(ShopRoom.class);
-			ArrayList<Point> list = room.list();
+			if (room != null){
+				ArrayList<Point> list = room.list();
 			Random.shuffle(list);
 			for (Point point : list){
 				int pos = Dungeon.level.pointToCell(point);
@@ -242,6 +243,7 @@ public class WndTradeItem extends WndInfoItem {
 				if (!Dungeon.level.passable[pos])
 					continue;
 				randomPos = pos;
+			}
 			}
 		}
 		if (randomPos == -1) {

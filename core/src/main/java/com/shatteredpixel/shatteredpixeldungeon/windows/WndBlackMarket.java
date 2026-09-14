@@ -85,7 +85,8 @@ public class WndBlackMarket extends Window {
 	private BitmapText batteryAmt;  //标题栏电池数量文本，用于动态刷新
 
 	public WndBlackMarket() {
-		super();
+		//背景取 ZeroshopUI 左上角 16x48 区域，1px 白色边框作为九宫格边距
+		super(0, 0, new NinePatch(Assets.Interfaces.ZEROSHOP_UI, 0, 0, 16, 48, 1, 1, 1, 1));
 
 		int winW = (int)(Game.width  / (float) PixelScene.cameraZoom)
 				- chrome.marginHor() - SCREEN_MARGIN * 2;
@@ -243,7 +244,8 @@ public class WndBlackMarket extends Window {
 		CategoryButton(String text, Runnable action) {
 			super();
 			this.action = action;
-			bg = Chrome.get(Chrome.Type.GREY_BUTTON);
+			//左侧分类按钮取 ZeroshopUI 第一排第 17 像素起的 16x16 区域，2px 对称边距
+			bg = new NinePatch(Assets.Interfaces.ZEROSHOP_UI, 16, 0, 16, 16, 2);
 			add(bg);
 
 			label = PixelScene.renderTextBlock(text, 7);
