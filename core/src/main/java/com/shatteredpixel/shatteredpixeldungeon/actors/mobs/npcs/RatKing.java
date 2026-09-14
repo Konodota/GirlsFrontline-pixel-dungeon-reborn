@@ -29,6 +29,7 @@ import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.Ratmogrify;
+import com.shatteredpixel.shatteredpixeldungeon.items.ChristmasTicket;
 import com.shatteredpixel.shatteredpixeldungeon.items.KingsCrown;
 import com.shatteredpixel.shatteredpixeldungeon.items.XMasGift;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.Choco;
@@ -177,8 +178,8 @@ public class RatKing extends NPC {
             else {
                 yellNormal(Messages.get(this, "zero_guide"));
             }
-            //弹出圣诞节彩蛋开关窗口（全局开关，对新开的探索生效）
-            showXmasEggWindow();
+            //圣诞节彩蛋功能：未永久解锁时需持圣诞入场券找FNC解锁；解锁后弹出开关窗口
+            showXmasEntry();
         }
         else if (crown != null){
             if (hero.belongings.armor() == null) {
@@ -340,6 +341,63 @@ public class RatKing extends NPC {
         } catch (IOException e) {
             GirlsFrontlinePixelDungeon.reportException(e);
         }
+    }
+
+    //圣诞节彩蛋入口：未永久解锁时检查英雄是否持有圣诞入场券，持票则询问是否交付
+    private void showXmasEntry() {
+        if (SPDSettings.xmasUnlocked()) {
+            showXmasEggWindow();
+            return;
+        }
+        if (hero.belongings.getItem(ChristmasTicket.class) != null) {
+            Game.runOnRenderThread(new Callback() {
+                @Override
+                public void call() {
+                    GameScene.show(new WndOptions(
+                            sprite(),
+                            Messages.titleCase(name()),
+                            Messages.get(RatKing.this, "xmas_ticket_prompt"),
+                            Messages.get(RatKing.this, "xmas_ticket_yes"),
+                            Messages.get(RatKing.this, "xmas_ticket_no")
+                    ) {
+                        @Override
+                        protected void onSelect(int index) {
+                            if (index == 0) {
+                                unlockXmasWithTicket();
+                            }
+                        }
+                    });
+                }
+            });
+        }
+        else {
+            //尚未持票：提示入场券的获取途径
+            yellNormal(Messages.get(this, "xmas_ticket_needed"));
+        }
+    }
+
+    //消耗圣诞入场券，永久解锁圣诞节彩蛋功能，随后直接弹出开关窗口供玩家开启
+    private void unlockXmasWithTicket() {
+        if (SPDSettings.xmasUnlocked()) return;
+        ChristmasTicket ticket = hero.belongings.getItem(ChristmasTicket.class);
+        if (ticket == null) return;
+
+        ticket.detach(hero.belongings.backpack);
+        SPDSettings.xmasUnlocked(true);
+
+        //立即刷新FNC的节日皮肤
+        if (sprite instanceof FncSprite) {
+            ((FncSprite) sprite).resetAnims();
+        }
+
+        yellGood(Messages.get(this, "xmas_ticket_used"));
+
+        Game.runOnRenderThread(new Callback() {
+            @Override
+            public void call() {
+                showXmasEggWindow();
+            }
+        });
     }
 
     private void GetChock(){

@@ -22,6 +22,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.items;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.ClothArmor;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.HuntressArmor;
@@ -434,7 +435,8 @@ public class Generator {
 					SaigaPlate.class,
 					P90.class
 			};
-			WEP_T5.probs = new float[]{ 6, 3, 5, 4, 6, 4, 5 };
+			//P90（末位）默认权重 0：不进入正常局内生成池，需在机密商店永久解锁后由 refreshUnlockables() 放开
+			WEP_T5.probs = new float[]{ 6, 3, 5, 4, 6, 4, 0 };
 
 			WEP_T6.classes = new Class<?>[]{
 					SAIGA.class,
@@ -584,6 +586,8 @@ public class Generator {
 		for (Category cat : Category.values()) {
 			reset(cat);
 		}
+		//同步机密商店永久解锁状态（如 P90 生成池）
+		refreshUnlockables();
 	}
 
 	public static void generalReset(){
@@ -678,6 +682,20 @@ public class Generator {
 			Category.WEP_T5,
 			Category.WEP_T6
 	};
+
+	//机密商店永久解锁项：P90 位于 WEP_T5.classes 末位，解锁后恢复此生成权重
+	private static final int P90_INDEX = 6;
+	private static final float P90_UNLOCKED_PROB = 5;
+
+	/**
+	 * 依据 SPDSettings 中的永久解锁状态刷新受机密商店控制的生成池权重。
+	 * 在每次开局/读档（{@link #fullReset()}）及商店购买解锁后调用。
+	 * 所有武器生成路径（randomWeapon、random(Category)、幽灵奖励、嬗变卷轴、商店）
+	 * 都读取 WEP_T5.probs，故只需在此一处放开/屏蔽 P90。
+	 */
+	public static void refreshUnlockables() {
+		Category.WEP_T5.probs[P90_INDEX] = SPDSettings.p90Unlocked() ? P90_UNLOCKED_PROB : 0;
+	}
 
 	public static MeleeWeapon randomWeapon(){
 		return randomWeapon(Dungeon.curDepth() / 5);

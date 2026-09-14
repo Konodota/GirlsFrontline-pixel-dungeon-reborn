@@ -62,6 +62,18 @@ public class SPDSettings extends GameSettings {
 		return getInt( KEY_BATTERY, 0 );
 	}
 
+	//机密商店永久解锁：P90 武器生成池（跨存档保留；未解锁时 P90 不会出现在正常局内生成池中）
+
+	public static final String KEY_P90_UNLOCKED = "shop_unlocked_p90";
+
+	public static void p90Unlocked( boolean value ) {
+		put( KEY_P90_UNLOCKED, value );
+	}
+
+	public static boolean p90Unlocked() {
+		return getBoolean( KEY_P90_UNLOCKED, false );
+	}
+
 	//Holiday easter egg: 圣诞节彩蛋全局开关（由0层营地FNC对话切换，对新开的存档生效）
 
 	public static final String KEY_XMAS_EGG    = "xmas_easter_egg";
@@ -73,7 +85,19 @@ public class SPDSettings extends GameSettings {
 	public static boolean xmasEgg() {
 		return getBoolean( KEY_XMAS_EGG, false );
 	}
-	
+
+	//圣诞节彩蛋功能的永久解锁标记：向0层营地FNC交付圣诞入场券后开启（跨存档保留）
+
+	public static final String KEY_XMAS_UNLOCKED = "xmas_unlocked";
+
+	public static void xmasUnlocked( boolean value ) {
+		put( KEY_XMAS_UNLOCKED, value );
+	}
+
+	public static boolean xmasUnlocked() {
+		return getBoolean( KEY_XMAS_UNLOCKED, false );
+	}
+
 	//Graphics
 	
 	public static final String KEY_FULLSCREEN	= "fullscreen";

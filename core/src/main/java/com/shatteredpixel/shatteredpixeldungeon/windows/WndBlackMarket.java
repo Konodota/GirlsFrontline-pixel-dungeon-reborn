@@ -23,8 +23,14 @@ package com.shatteredpixel.shatteredpixeldungeon.windows;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Chrome;
+import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
+import com.shatteredpixel.shatteredpixeldungeon.items.ChristmasTicket;
+import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
+import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.SMG.P90;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
+import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
@@ -34,6 +40,7 @@ import com.shatteredpixel.shatteredpixeldungeon.ui.Icons;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ScrollPane;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
+import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.noosa.BitmapText;
 import com.watabou.noosa.ColorBlock;
 import com.watabou.noosa.Game;
@@ -70,10 +77,17 @@ public class WndBlackMarket extends Window {
 	private static final int NUM_CATEGORIES = 6;  //占位分类数量
 	private static final int ITEMS_PER_PAGE = 6;  //每个分类下的占位卡片数量
 
+	//武器类第一格：P90 永久解锁商品（解锁后才会进入正常局内武器生成池）
+	private static final int P90_UNLOCK_PRICE = 25;
+
+	//武器类第二格：圣诞入场券商品（购买后放入背包，交给营地FNC永久解锁圣诞节彩蛋功能）
+	private static final int XMAS_TICKET_PRICE = 10;
+
 	private static final int SEP_COLOR      = 0xFF000000; //分隔条
 	private static final int ICON_FRAME     = 0x33FFFFFF; //卡片图标底框
 	private static final int PRICE_COLOR    = 0xFFE07F1E; //价格条橙色
-	private static final int TAB_GOLD       = 0xFFFFC846; //选中页签的金色
+	private static final int UNLOCKED_COLOR = 0xFF4CAF50; //已解锁价格条绿色
+	private static final int TAB_ORANGE     = 0xFFFFC846; //选中页签的半透明橙色覆盖层
 	private static final int TEXT_DIM       = 0xFFC8C8C8; //次要文字
 
 	private int currentPage = 0;
@@ -191,7 +205,7 @@ public class WndBlackMarket extends Window {
 		buildPage(currentPage);
 	}
 
-	//构建某一分类页的占位卡片；接入真实商店数据时替换这里
+	//构建某一分类页的卡片；武器类（第1页）第一格为 P90 永久解锁商品，其余暂为占位卡片
 	private void buildPage(int page) {
 		Component content = pane.content();
 		content.clear();
@@ -199,12 +213,28 @@ public class WndBlackMarket extends Window {
 		float paneW = pane.width();
 		float cardW = (paneW - GAP * (cols - 1)) / cols;
 
-		ItemCard[] cards = new ItemCard[ITEMS_PER_PAGE];
+		Button[] cards = new Button[ITEMS_PER_PAGE];
 		float[] cardH = new float[ITEMS_PER_PAGE];
 		for (int i = 0; i < ITEMS_PER_PAGE; i++) {
-			cards[i] = new ItemCard(i + 1);
-			//卡片高度按文字内容自适应，至少 CARD_H_MIN
-			cardH[i] = Math.max(CARD_H_MIN, cards[i].measureHeight(cardW));
+			if (page == 0 && i == 0) {
+				//武器类第一格：P90 解锁卡，购买后永久加入局内生成池
+				UnlockCard unlock = new UnlockCard(new P90(), P90_UNLOCK_PRICE,
+						SPDSettings::p90Unlocked, this::buyP90, this::onUnlockPurchased);
+				cards[i] = unlock;
+				cardH[i] = Math.max(CARD_H_MIN, unlock.measureHeight(cardW));
+			} else if (page == 0 && i == 1) {
+				//武器类第二格：圣诞入场券卡，购买后放入背包，交给营地FNC永久解锁圣诞节彩蛋
+				UnlockCard ticket = new UnlockCard(new ChristmasTicket(), XMAS_TICKET_PRICE,
+						SPDSettings::xmasUnlocked, this::buyTicket, this::onUnlockPurchased,
+						"ticket_desc", "ticket_done", "buy_ticket_msg");
+				cards[i] = ticket;
+				cardH[i] = Math.max(CARD_H_MIN, ticket.measureHeight(cardW));
+			} else {
+				ItemCard card = new ItemCard(i + 1);
+				cards[i] = card;
+				//卡片高度按文字内容自适应，至少 CARD_H_MIN
+				cardH[i] = Math.max(CARD_H_MIN, card.measureHeight(cardW));
+			}
 		}
 
 		int rows = (int) Math.ceil(ITEMS_PER_PAGE / (float) cols);
@@ -232,11 +262,59 @@ public class WndBlackMarket extends Window {
 	}
 
 	/**
+	 * 尝试购买 P90 永久解锁（由 {@link UnlockCard} 在二次确认后调用）。
+	 * 电池不足时返回 false 且不做任何改动；成功则扣除电池、写入永久解锁、
+	 * 立即放开 Generator 中的 P90 生成权重。本方法在渲染线程执行。
+	 */
+	private boolean buyP90() {
+		if (SPDSettings.p90Unlocked()) return true;
+		if (SPDSettings.batteryLeft() < P90_UNLOCK_PRICE) {
+			GLog.w(Messages.format(Messages.get(this, "buy_poor"), P90_UNLOCK_PRICE));
+			return false;
+		}
+		SPDSettings.batteryAdd(-P90_UNLOCK_PRICE);
+		SPDSettings.p90Unlocked(true);
+		//立即刷新本进程生成池，使紧接着开始的下一局即可生成 P90
+		Generator.refreshUnlockables();
+		Sample.INSTANCE.play(Assets.Sounds.UNLOCK);
+		GLog.i(Messages.get(this, "buy_p90_done"));
+		return true;
+	}
+
+	/**
+	 * 尝试购买圣诞入场券（由 {@link UnlockCard} 在二次确认后调用）。
+	 * 电池不足时返回 false 且不做任何改动；成功则扣除电池并将入场券放入英雄背包。
+	 * 圣诞节彩蛋功能已永久解锁后不再出售。本方法在渲染线程执行。
+	 */
+	private boolean buyTicket() {
+		if (SPDSettings.xmasUnlocked()) return true;
+		if (SPDSettings.batteryLeft() < XMAS_TICKET_PRICE) {
+			GLog.w(Messages.format(Messages.get(this, "buy_poor"), XMAS_TICKET_PRICE));
+			return false;
+		}
+		SPDSettings.batteryAdd(-XMAS_TICKET_PRICE);
+		//入场券放入英雄背包；背包满时掉落在玩家脚下
+		ChristmasTicket ticket = new ChristmasTicket();
+		if (!ticket.doPickUp(Dungeon.hero)) {
+			Dungeon.level.drop(ticket, Dungeon.hero.pos).sprite.drop();
+		}
+		GLog.i(Messages.get(this, "buy_ticket_done"));
+		return true;
+	}
+
+	//解锁购买成功后：刷新标题栏电池数，并重绘当前页让卡片切换为“已解锁”
+	private void onUnlockPurchased() {
+		refreshBattery();
+		selectPage(currentPage);
+	}
+
+	/**
 	 * 左侧分类页签：未选中为普通灰底，选中时金色高亮、文字变黑（对应参考图中亮黄的“道具”页签）。
 	 */
 	private static class CategoryButton extends Button {
 
 		private final NinePatch bg;
+		private final ColorBlock overlay; //选中态半透明橙色覆盖层
 		private final RenderedTextBlock label;
 		private final Runnable action;
 		private boolean selected = false;
@@ -247,6 +325,11 @@ public class WndBlackMarket extends Window {
 			//左侧分类按钮取 ZeroshopUI 第一排第 17 像素起的 16x16 区域，2px 对称边距
 			bg = new NinePatch(Assets.Interfaces.ZEROSHOP_UI, 16, 0, 16, 16, 2);
 			add(bg);
+
+			//半透明橙色覆盖层，初始不可见，选中时显示
+			overlay = new ColorBlock(1, 1, TAB_ORANGE);
+			overlay.visible = false;
+			add(overlay);
 
 			label = PixelScene.renderTextBlock(text, 7);
 			add(label);
@@ -264,10 +347,10 @@ public class WndBlackMarket extends Window {
 
 		private void applyStyle() {
 			if (selected) {
-				bg.hardlight(TAB_GOLD);
+				overlay.visible = true;
 				label.hardlight(0x000000);
 			} else {
-				bg.resetColor();
+				overlay.visible = false;
 				label.resetColor();
 			}
 		}
@@ -278,6 +361,10 @@ public class WndBlackMarket extends Window {
 			bg.x = x;
 			bg.y = y;
 			bg.size(width, height);
+
+			overlay.x = x;
+			overlay.y = y;
+			overlay.size(width, height);
 
 			label.maxWidth((int)width);
 			label.setPos(x + (width - label.width()) / 2f,
@@ -293,7 +380,179 @@ public class WndBlackMarket extends Window {
 
 		@Override
 		protected void onPointerUp() {
+			bg.resetColor();
 			applyStyle();
+		}
+	}
+
+	/**
+	 * 永久解锁商品卡（武器类：P90、圣诞入场券）：
+	 * 未解锁时底部为橙色价格条（电池+价格），点击弹出二次确认，确认后执行购买回调；
+	 * 已解锁时底部变为绿色“已解锁”条，不再可购买。解锁状态跨存档保存在 SPDSettings。
+	 */
+
+	//无参布尔回调（不使用 java.util.function 以兼容 minSdk 19）
+	private interface BoolQuery {
+		boolean get();
+	}
+
+	private class UnlockCard extends Button {
+
+		private final Item item;
+		private final int price;
+		private final BoolQuery isUnlocked;
+		private final BoolQuery tryPurchase; //二次确认后执行，返回是否购买成功
+		private final Runnable onChanged;    //购买成功后的 UI 刷新回调
+		private final boolean unlocked;
+
+		//文案 key：未解锁/已解锁状态说明，以及点击购买时的确认文案
+		private final String descKey;
+		private final String doneKey;
+		private final String buyMsgKey;
+
+		private final NinePatch bg;
+		private final ColorBlock iconFrame;
+		private final ItemSprite icon;
+		private final RenderedTextBlock name;
+		private final RenderedTextBlock status;
+		private final ColorBlock priceBar;
+		private final ItemSprite priceIcon;        //未解锁：电池图标
+		private final RenderedTextBlock priceText; //未解锁：价格数字
+		private final RenderedTextBlock doneLabel; //已解锁：“已解锁”
+
+		UnlockCard(Item item, int price, BoolQuery isUnlocked,
+				   BoolQuery tryPurchase, Runnable onChanged) {
+			//默认文案：P90 解锁卡（解锁后加入局内生成池）
+			this(item, price, isUnlocked, tryPurchase, onChanged,
+					"unlock_desc", "unlock_done", "buy_p90_msg");
+		}
+
+		UnlockCard(Item item, int price, BoolQuery isUnlocked,
+				   BoolQuery tryPurchase, Runnable onChanged,
+				   String descKey, String doneKey, String buyMsgKey) {
+			this.item = item;
+			this.price = price;
+			this.isUnlocked = isUnlocked;
+			this.tryPurchase = tryPurchase;
+			this.onChanged = onChanged;
+			this.descKey = descKey;
+			this.doneKey = doneKey;
+			this.buyMsgKey = buyMsgKey;
+			this.unlocked = isUnlocked.get();
+
+			bg = Chrome.get(Chrome.Type.GREY_BUTTON_TR);
+			add(bg);
+
+			iconFrame = new ColorBlock(16, 16, ICON_FRAME);
+			add(iconFrame);
+
+			icon = new ItemSprite(item);
+			add(icon);
+
+			name = PixelScene.renderTextBlock(item.name(), 7);
+			add(name);
+
+			status = PixelScene.renderTextBlock(
+					Messages.get(WndBlackMarket.class, unlocked ? doneKey : descKey), 6);
+			status.hardlight(TEXT_DIM);
+			add(status);
+
+			priceBar = new ColorBlock(1, 1, unlocked ? UNLOCKED_COLOR : PRICE_COLOR);
+			add(priceBar);
+
+			if (unlocked) {
+				priceIcon = null;
+				priceText = null;
+				doneLabel = PixelScene.renderTextBlock(Messages.get(WndBlackMarket.class, "unlocked"), 7);
+				add(doneLabel);
+			} else {
+				doneLabel = null;
+				priceIcon = new ItemSprite(ItemSpriteSheet.BATTERY);
+				priceIcon.scale.set(0.45f);
+				add(priceIcon);
+
+				priceText = PixelScene.renderTextBlock(Integer.toString(price), 7);
+				add(priceText);
+			}
+		}
+
+		//与 ItemCard 相同的高度计算：图标行 + 名称/说明两行 + 底部价格条
+		float measureHeight(float cardW) {
+			int textAreaW = (int) (cardW - 22); //2=左内边距 + 16图标 + 2间距 + 2右内边距
+			name.maxWidth(Math.max(1, textAreaW));
+			status.maxWidth(Math.max(1, textAreaW));
+			float topContent = Math.max(16 + 2, 2 + name.height() + 1 + status.height()) + 1;
+			return topContent + PRICE_H;
+		}
+
+		@Override
+		protected void layout() {
+			super.layout();
+			bg.x = x;
+			bg.y = y;
+			bg.size(width, height);
+
+			iconFrame.x = x + 2;
+			iconFrame.y = y + 2;
+
+			icon.x = iconFrame.x + (iconFrame.width() - icon.width()) / 2f;
+			icon.y = iconFrame.y + (iconFrame.height() - icon.height()) / 2f;
+			PixelScene.align(icon);
+
+			float textX = iconFrame.x + iconFrame.width() + 2;
+			int textW = (int)(width - (textX - x) - 2);
+			name.maxWidth(textW);
+			name.setPos(textX, y + 2);
+
+			status.maxWidth(textW);
+			status.setPos(textX, name.bottom() + 1);
+
+			priceBar.x = x;
+			priceBar.y = y + height - PRICE_H;
+			priceBar.size(width, PRICE_H);
+
+			if (unlocked) {
+				doneLabel.setPos(x + (width - doneLabel.width()) / 2f,
+						priceBar.y + (PRICE_H - doneLabel.height()) / 2f);
+				PixelScene.align(doneLabel);
+			} else {
+				float groupW = priceIcon.width() + 1 + priceText.width();
+				float gx = x + (width - groupW) / 2f;
+				priceIcon.x = gx;
+				priceIcon.y = priceBar.y + (PRICE_H - priceIcon.height()) / 2f;
+				PixelScene.align(priceIcon);
+				priceText.setPos(priceIcon.x + priceIcon.width() + 1,
+						priceBar.y + (PRICE_H - priceText.height()) / 2f);
+				PixelScene.align(priceText);
+			}
+		}
+
+		@Override
+		protected void onClick() {
+			if (unlocked) return; //已解锁，不可重复购买
+			GameScene.show(new WndOptions(
+					Messages.get(WndBlackMarket.class, "buy_title"),
+					Messages.format(Messages.get(WndBlackMarket.class, buyMsgKey), item.name(), price),
+					Messages.get(WndBlackMarket.class, "buy_yes"),
+					Messages.get(WndBlackMarket.class, "buy_no")) {
+				@Override
+				protected void onSelect(int index) {
+					if (index == 0 && tryPurchase.get()) {
+						onChanged.run();
+					}
+				}
+			});
+		}
+
+		@Override
+		protected void onPointerDown() {
+			if (!unlocked) bg.brightness(1.3f);
+			Sample.INSTANCE.play(Assets.Sounds.CLICK);
+		}
+
+		@Override
+		protected void onPointerUp() {
+			bg.resetColor();
 		}
 	}
 

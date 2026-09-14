@@ -321,6 +321,8 @@ public class ItemSpriteSheet {
 	public static final int BATTERY          = WEP_TIER6+10;
 	//电池小图标（全局货币 HUD 用）：与电池同格的独立虚拟帧，裁剪区域单独指定
 	public static final int BATTERY_ICON     = 1000;
+	public static final int CHRISTMASTICKET = WEP_TIER6+11;
+		
 	static{
 		assignItemRect(GROZA,    		 16, 17);
 		assignItemRect(MG42,     	 	 16, 17);
@@ -337,6 +339,7 @@ public class ItemSpriteSheet {
 				(BATTERY / WIDTH) * SIZE + 6,
 				(BATTERY % WIDTH) * SIZE + 7,
 				(BATTERY / WIDTH) * SIZE + 9 );
+		assignItemRect(CHRISTMASTICKET,  15, 6);
 	}
 
 
