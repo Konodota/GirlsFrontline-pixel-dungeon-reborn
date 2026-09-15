@@ -252,6 +252,19 @@ public class PixelScene extends Scene {
 		savedWindows.clear();
 	}
 
+	//场景当前是否存在已打开的窗口（弹窗打开时标题页滚轮翻页等全局输入应让位）
+	public boolean hasOpenWindow(){
+		if (members == null){
+			return false;
+		}
+		for (Gizmo g : members.toArray(new Gizmo[0])){
+			if (g instanceof Window){
+				return true;
+			}
+		}
+		return false;
+	}
+
 	@Override
 	public void destroy() {
 		super.destroy();

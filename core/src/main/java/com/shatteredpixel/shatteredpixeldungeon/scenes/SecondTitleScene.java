@@ -19,6 +19,7 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ActionIndicator;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Archs;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Icons;
+import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
 import com.shatteredpixel.shatteredpixeldungeon.ui.StyledButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.WndTextInput;
 import com.shatteredpixel.shatteredpixeldungeon.ui.canScrollRedButton;
@@ -38,6 +39,8 @@ import java.util.ArrayList;
 public class SecondTitleScene extends PixelScene {
 	private static int month = SPDSettings.getSpecialDay_Month();
 	private static int day = SPDSettings.getSpecialDay_Day();
+
+	private TitlePageSwipe pageSwipe;
 	@Override
 	public void create() {
 		super.create();
@@ -141,27 +144,6 @@ public class SecondTitleScene extends PixelScene {
 		AutoIdentify.icon(Icons.get(Icons.ENTER));
 		add(AutoIdentify);
 
-        StyledButton LastTitle;
-        LastTitle = new StyledButton(GREY_BUTTON, "上一页") {
-            @Override
-            protected void onClick() {
-                GirlsFrontlinePixelDungeon.switchNoFade(TitleScene.class);
-            }
-        };
-        LastTitle.icon(Icons.get(Icons.ENTER));
-        add(LastTitle);
-
-        StyledButton NextTitle;
-        NextTitle = new StyledButton(GREY_BUTTON, "下一页") {
-            @Override
-            protected void onClick() {
-                GirlsFrontlinePixelDungeon.switchNoFade(SecondTitleScene.class);
-            }
-        };
-        NextTitle = new StyledButton(GREY_BUTTON_TR,"下一页(未制作)");
-        NextTitle.icon(Icons.get(Icons.ENTER));
-        add(NextTitle);
-
 		final int BTN_HEIGHT = 20;
 		final int GAP = 2;
 
@@ -171,17 +153,28 @@ public class SecondTitleScene extends PixelScene {
 			AutoIdentify.setRect(btnZeroLevel.left()		,btnZeroLevel.bottom()+GAP		,btnZeroLevel.width()  				,BTN_HEIGHT);
 			SeedFinder	.setRect(btnZeroLevel.left()		,AutoIdentify.bottom()+GAP 		,btnZeroLevel.width()/2F-GAP	,BTN_HEIGHT);
 			cake		.setRect(SeedFinder.right()+GAP	,AutoIdentify.bottom()+GAP 		,btnZeroLevel.width()/2F-GAP  ,BTN_HEIGHT);
-			LastTitle	.setRect(btnZeroLevel.left()		,SeedFinder.bottom()+GAP 		,btnZeroLevel.width()/2F-GAP  ,BTN_HEIGHT);
-            NextTitle	.setRect(LastTitle.right()+GAP	,SeedFinder.bottom()+GAP 		,btnZeroLevel.width()/2F-GAP  ,BTN_HEIGHT);
 		} else {
             btnZeroLevel.setRect(title.x, topRegion+GAP, title.width(), BTN_HEIGHT);
 			align(btnZeroLevel);
 			AutoIdentify.setRect(btnZeroLevel.left(),btnZeroLevel.bottom()+GAP	,btnZeroLevel.width()  ,BTN_HEIGHT);
 			SeedFinder	.setRect(btnZeroLevel.left(),AutoIdentify.bottom()+GAP	,btnZeroLevel.width()  ,BTN_HEIGHT);
 			cake		.setRect(btnZeroLevel.left(),SeedFinder.bottom()+GAP		,btnZeroLevel.width()  ,BTN_HEIGHT);
-			LastTitle	.setRect(btnZeroLevel.left(),cake.bottom()+GAP			,btnZeroLevel.width()  ,BTN_HEIGHT);
-            NextTitle	.setRect(btnZeroLevel.left(),LastTitle.bottom()+GAP		,btnZeroLevel.width()  ,BTN_HEIGHT);
 		}
+
+		RenderedTextBlock slideHint = PixelScene.renderTextBlock(Messages.get(this, "slide_hint"), 7);
+		slideHint.hardlight(0x999999);
+		slideHint.setPos((int)((w - slideHint.width())/2f), h - slideHint.height() - 10);
+		align(slideHint);
+		add(slideHint);
+
+		//滑动翻页：右滑/下滑返回第一标题页；第三页尚未制作，前向滑动不响应
+		pageSwipe = new TitlePageSwipe(
+				null,
+				() -> {
+					GirlsFrontlinePixelDungeon.switchNoFade(TitleScene.class);
+					return true;
+				});
+		pageSwipe.attach();
 
 		fadeIn();
 	}
@@ -195,6 +188,14 @@ public class SecondTitleScene extends PixelScene {
 	@Override
 	protected void onBackPressed() {
 		//Do nothing
+	}
+
+	@Override
+	public void destroy() {
+		if (pageSwipe != null){
+			pageSwipe.detach();
+		}
+		super.destroy();
 	}
 
     public static void enterMainGame(){

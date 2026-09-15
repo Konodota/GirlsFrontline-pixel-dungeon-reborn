@@ -26,7 +26,6 @@ import java.util.ArrayList;
 
 //temporary
 import static com.shatteredpixel.shatteredpixeldungeon.Chrome.Type.GREY_BUTTON;
-import static com.shatteredpixel.shatteredpixeldungeon.Chrome.Type.GREY_BUTTON_TR;
 import static com.shatteredpixel.shatteredpixeldungeon.Chrome.Type.TOAST_TR;
 
 import com.shatteredpixel.shatteredpixeldungeon.Chrome;
@@ -51,6 +50,9 @@ import com.watabou.utils.ColorMath;
 import com.watabou.utils.DeviceCompat;
 
 public class TitleScene extends PixelScene {
+
+	private TitlePageSwipe pageSwipe;
+
 	@Override
 	public void create() {
 		super.create();
@@ -144,20 +146,6 @@ public class TitleScene extends PixelScene {
 		btnAbout.icon(xs);
 		add(btnAbout);
 
-        StyledButton NextTitle;
-        if (Badges.isUnlocked(Badges.Badge.HAPPY_END) || DeviceCompat.isDebug()){
-            NextTitle = new StyledButton(GREY_BUTTON,"下一页"){
-                @Override
-                protected void onClick() {
-                    GirlsFrontlinePixelDungeon.switchNoFade(SecondTitleScene.class);
-                }
-            };
-        }else{
-            NextTitle = new StyledButton(GREY_BUTTON_TR,"下一页(未解锁)");
-        }
-        NextTitle.icon(Icons.get(Icons.ENTER));
-        add(NextTitle);
-
 		StyledButton btnChanges = new GDChangesButton(GREY_BUTTON,"更改");
 		btnChanges.icon(new Image(Icons.get(Icons.CHANGESLOG)));
 		btnChanges.setRect(0, h - 20, 50, 20);
@@ -169,16 +157,14 @@ public class TitleScene extends PixelScene {
 		if (landscape()) {
 			btnPlay.setRect(title.x - 50, topRegion + GAP, title.width() + 100 - 1, BTN_HEIGHT);
 			align(btnPlay);
-			NextTitle.setRect(btnPlay.left()				,btnPlay.bottom()+GAP		,btnPlay.width()  ,BTN_HEIGHT);
-			btnRankings.setRect(NextTitle.left()     		,NextTitle.bottom()+GAP     	,btnPlay.width()/2f    ,BTN_HEIGHT);
-			btnSettings.setRect(btnRankings.right()+GAP	,btnRankings.top()        		,btnPlay.width()/2f-GAP,BTN_HEIGHT);
-			btnBadges  .setRect(btnRankings.left() 			,btnRankings.bottom()+GAP 	,btnPlay.width()/2f    ,BTN_HEIGHT);
-			btnAbout   .setRect(btnSettings.left() 			,btnSettings.bottom()+GAP 	,btnPlay.width()/2f-GAP,BTN_HEIGHT);
+			btnRankings.setRect(btnPlay.left()			,btnPlay.bottom()+GAP	,btnPlay.width()/2f    ,BTN_HEIGHT);
+			btnSettings.setRect(btnRankings.right()+GAP	,btnPlay.bottom()+GAP	,btnPlay.width()/2f-GAP,BTN_HEIGHT);
+			btnBadges  .setRect(btnRankings.left()		,btnRankings.bottom()+GAP	,btnPlay.width()/2f    ,BTN_HEIGHT);
+			btnAbout   .setRect(btnSettings.left()		,btnRankings.bottom()+GAP	,btnPlay.width()/2f-GAP,BTN_HEIGHT);
 		} else {
 			btnPlay.setRect(title.x, topRegion+GAP, title.width(), BTN_HEIGHT);
 			align(btnPlay);
-			NextTitle.setRect(btnPlay.left(),btnPlay.bottom()+GAP,btnPlay.width(),BTN_HEIGHT);
-			btnRankings.setRect(btnPlay.left(),NextTitle.bottom()+GAP,btnPlay.width(),BTN_HEIGHT);
+			btnRankings.setRect(btnPlay.left(),btnPlay.bottom()+GAP,btnPlay.width(),BTN_HEIGHT);
 			btnBadges  .setRect(btnPlay.left(),btnRankings.bottom()+GAP,btnPlay.width(),BTN_HEIGHT);
 			btnSettings.setRect(btnPlay.left(),btnBadges  .bottom()+GAP,btnPlay.width(),BTN_HEIGHT);
 			btnAbout   .setRect(btnPlay.left(),btnSettings.bottom()+GAP,btnPlay.width(),BTN_HEIGHT);
@@ -199,6 +185,24 @@ public class TitleScene extends PixelScene {
         btnExit.setPos(w - 25, 0);
         add(btnExit);
 
+		//滑动翻页（含滚轮/上下键）仅在完美结局后解锁：携带护符返回0层会授予 HAPPY_END 徽章；
+		//未解锁时不挂任何翻页监听，也不显示提示；debug 版本始终可用
+		if (Badges.isUnlocked(Badges.Badge.HAPPY_END) || DeviceCompat.isDebug()){
+			RenderedTextBlock slideHint = PixelScene.renderTextBlock(Messages.get(this, "slide_hint"), 7);
+			slideHint.hardlight(0x999999);
+			slideHint.setPos((int)((w - slideHint.width())/2f), h - slideHint.height() - 10);
+			align(slideHint);
+			add(slideHint);
+
+			pageSwipe = new TitlePageSwipe(
+					() -> {
+						GirlsFrontlinePixelDungeon.switchNoFade(SecondTitleScene.class);
+						return true;
+					},
+					null);
+			pageSwipe.attach();
+		}
+
 		fadeIn();
 	}
 
@@ -206,6 +210,14 @@ public class TitleScene extends PixelScene {
 		Fireball fb = new Fireball();
 		fb.setPos( x, y );
 		add( fb );
+	}
+
+	@Override
+	public void destroy() {
+		if (pageSwipe != null){
+			pageSwipe.detach();
+		}
+		super.destroy();
 	}
 
 	private static class SettingsButton extends StyledButton {
