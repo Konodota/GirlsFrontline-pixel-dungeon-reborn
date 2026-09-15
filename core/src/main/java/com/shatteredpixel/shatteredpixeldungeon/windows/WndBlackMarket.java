@@ -28,6 +28,7 @@ import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.items.ChristmasTicket;
 import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.SuperAiDLC;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.SMG.P90;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
@@ -82,6 +83,9 @@ public class WndBlackMarket extends Window {
 
 	//武器类第二格：圣诞入场券商品（购买后放入背包，交给营地FNC永久解锁圣诞节彩蛋功能）
 	private static final int XMAS_TICKET_PRICE = 10;
+
+	//武器类第三格：超级小爱 DLC 解锁券（购买后立即解锁女猎手“超级小爱”转职按钮）
+	private static final int SUPER_AI_DLC_PRICE = 25;
 
 	private static final int SEP_COLOR      = 0xFF000000; //分隔条
 	private static final int ICON_FRAME     = 0x33FFFFFF; //卡片图标底框
@@ -229,6 +233,13 @@ public class WndBlackMarket extends Window {
 						"ticket_desc", "ticket_done", "buy_ticket_msg");
 				cards[i] = ticket;
 				cardH[i] = Math.max(CARD_H_MIN, ticket.measureHeight(cardW));
+			} else if (page == 0 && i == 2) {
+				//武器类第三格：超级小爱 DLC 解锁券，购买后立即解锁女猎手“超级小爱”转职按钮
+				UnlockCard dlc = new UnlockCard(new SuperAiDLC(), SUPER_AI_DLC_PRICE,
+						SPDSettings::superAiUnlocked, this::buySuperAiDLC, this::onUnlockPurchased,
+						"superai_desc", "superai_done", "buy_superai_msg");
+				cards[i] = dlc;
+				cardH[i] = Math.max(CARD_H_MIN, dlc.measureHeight(cardW));
 			} else {
 				ItemCard card = new ItemCard(i + 1);
 				cards[i] = card;
@@ -299,6 +310,24 @@ public class WndBlackMarket extends Window {
 			Dungeon.level.drop(ticket, Dungeon.hero.pos).sprite.drop();
 		}
 		GLog.i(Messages.get(this, "buy_ticket_done"));
+		return true;
+	}
+
+	/**
+	 * 尝试购买超级小爱 DLC 解锁券（由 {@link UnlockCard} 在二次确认后调用）。
+	 * 电池不足时返回 false 且不做任何改动；成功则扣除电池、写入永久解锁，
+	 * 使女猎手转职界面立即可见“超级小爱”按钮。本方法在渲染线程执行。
+	 */
+	private boolean buySuperAiDLC() {
+		if (SPDSettings.superAiUnlocked()) return true;
+		if (SPDSettings.batteryLeft() < SUPER_AI_DLC_PRICE) {
+			GLog.w(Messages.format(Messages.get(this, "buy_poor"), SUPER_AI_DLC_PRICE));
+			return false;
+		}
+		SPDSettings.batteryAdd(-SUPER_AI_DLC_PRICE);
+		SPDSettings.superAiUnlocked(true);
+		Sample.INSTANCE.play(Assets.Sounds.UNLOCK);
+		GLog.i(Messages.get(this, "buy_superai_done"));
 		return true;
 	}
 

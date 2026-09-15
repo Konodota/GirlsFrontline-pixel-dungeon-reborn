@@ -322,6 +322,7 @@ public class ItemSpriteSheet {
 	//电池小图标（全局货币 HUD 用）：与电池同格的独立虚拟帧，裁剪区域单独指定
 	public static final int BATTERY_ICON     = 1000;
 	public static final int CHRISTMASTICKET = WEP_TIER6+11;
+	public static final int SuperAIDLC   = WEP_TIER6+12;
 		
 	static{
 		assignItemRect(GROZA,    		 16, 17);
@@ -340,6 +341,7 @@ public class ItemSpriteSheet {
 				(BATTERY % WIDTH) * SIZE + 7,
 				(BATTERY / WIDTH) * SIZE + 9 );
 		assignItemRect(CHRISTMASTICKET,  15, 6);
+		assignItemRect(SuperAIDLC,        15, 6);
 	}
 
 
@@ -840,6 +842,7 @@ public class ItemSpriteSheet {
 	public static final  int GUN562    	       =GUN561_NUKE+3;
 	public static final  int GUN562ACCESSORIES =GUN561_NUKE+4;
 	public static final  int GSH18             =GUN561_NUKE+5;
+	public static final  int MEDICALKET        =GUN561_NUKE+6;
 	public static final  int GUN64             =GUN561_NUKE+7;
 	public static final  int NIGHTVISIONHELMET =GUN561_NUKE+8;
 	public static final  int NIGHTVISIONHELMET2=GUN561_NUKE+9;
@@ -852,6 +855,7 @@ public class ItemSpriteSheet {
 		assignItemRect(GUN562,             16, 15);
 		assignItemRect(GUN562ACCESSORIES,  16, 15);
 		assignItemRect(GSH18,              16, 16);
+		assignItemRect(MEDICALKET,         15, 14);
 		assignItemRect(GUN64,              12, 16);
 		assignItemRect(NIGHTVISIONHELMET,  16, 16);
 		assignItemRect(NIGHTVISIONHELMET2, 16, 16);

@@ -1005,8 +1005,9 @@ public enum Talent {
 				Collections.addAll(tierTalents, FARSIGHT, SHARED_ENCHANTMENT, SHARED_UPGRADES);
 				break;
 			case WARDEN:
-				Collections.addAll(tierTalents, DURABLE_TIPS, BARKSKIN, SHIELDING_DEW);
-				break;
+			Collections.addAll(tierTalents, DURABLE_TIPS, BARKSKIN, SHIELDING_DEW);
+			break;
+		case SUPER_AI: break; // 超级小爱：天赋暂时为空
 			case EMP_BOMB:
 				Collections.addAll(tierTalents, EMP_One, EMP_Two, EMP_Three);
 				break;

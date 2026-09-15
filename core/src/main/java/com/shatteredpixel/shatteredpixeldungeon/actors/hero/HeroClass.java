@@ -123,7 +123,7 @@ public enum HeroClass {
 	WARRIOR( HeroSubClass.BERSERKER, HeroSubClass.GLADIATOR ),
 	MAGE( HeroSubClass.BATTLEMAGE, HeroSubClass.WARLOCK ),
 	ROGUE( HeroSubClass.ASSASSIN, HeroSubClass.FREERUNNER ),
-	HUNTRESS( HeroSubClass.SNIPER, HeroSubClass.WARDEN ),
+	HUNTRESS( HeroSubClass.SNIPER, HeroSubClass.WARDEN, HeroSubClass.SUPER_AI ),
 	TYPE561( HeroSubClass.EMP_BOMB, HeroSubClass.GUN_MASTER ),
 	GSH18( HeroSubClass.FUTURE_STAR, HeroSubClass.MOBILE_MEDICALTABLE ),
 	HK416( HeroSubClass.NONE, HeroSubClass.NONE ),

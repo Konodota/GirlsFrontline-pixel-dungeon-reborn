@@ -74,6 +74,18 @@ public class SPDSettings extends GameSettings {
 		return getBoolean( KEY_P90_UNLOCKED, false );
 	}
 
+	//机密商店永久解锁：女猎手“超级小爱”转职（跨存档保留；未解锁时隼无法在转职界面看到 SUPER_AI 按钮）
+
+	public static final String KEY_SUPER_AI_UNLOCKED = "shop_unlocked_super_ai";
+
+	public static void superAiUnlocked( boolean value ) {
+		put( KEY_SUPER_AI_UNLOCKED, value );
+	}
+
+	public static boolean superAiUnlocked() {
+		return getBoolean( KEY_SUPER_AI_UNLOCKED, false );
+	}
+
 	//Holiday easter egg: 圣诞节彩蛋全局开关（由0层营地FNC对话切换，对新开的存档生效）
 
 	public static final String KEY_XMAS_EGG    = "xmas_easter_egg";

@@ -60,6 +60,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Momentum;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Paralysis;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Regeneration;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.SiriusHeart;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.SuperAiFlight;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.SnipersMark;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.StarShield;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.GSH18Talent;
@@ -389,6 +390,10 @@ public class Hero extends Char {
 			// 未来之星读档时补挂副手换枪指示器
 			if (subClass == HeroSubClass.FUTURE_STAR) {
 				Buff.affect(this, GunSwap.class);
+			}
+			// 超级小爱读档时补挂飞行切换指示器
+			if (subClass == HeroSubClass.SUPER_AI) {
+				Buff.affect(this, SuperAiFlight.class);
 			}
 			CardAffect.kiloTimesVersionUpdate();
 			CardSelector selector = null;

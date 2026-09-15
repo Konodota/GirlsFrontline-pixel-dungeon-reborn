@@ -43,6 +43,7 @@ public enum HeroSubClass {
 	
 	SNIPER(HeroIcon.SNIPER),
 	WARDEN(HeroIcon.WARDEN),
+	SUPER_AI(HeroIcon.HEROIC_LEAP), // 超级小爱
 
     EMP_BOMB(HeroIcon.EMP_BOMB),
     GUN_MASTER(HeroIcon.GUN_MASTER),
