@@ -64,6 +64,11 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.SuperAiFlight;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.SnipersMark;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.StarShield;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.GSH18Talent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.HuntressTalent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.MageTalent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.RogueTalent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.Type561Talent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.WarriorTalent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.TalentSecondSight;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vertigo;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.WellFed;
@@ -588,10 +593,8 @@ public class Hero extends Char {
 			// 下次攻击必定命中，设置一个非常高的accuracy值，变成测试枪了（）
 			return 1_000_000;
 		}
-        // 56天赋：1-4
-        if (buff(Talent.Type56BookTracker.class) != null) {
-            accuracy *= 1.1F + 0.2F * pointsInTalent(Talent.Type56_14);
-        }
+        // 56-1式天赋：知识的力量（读书后精度提升，实现见 Type561Talent）
+        accuracy *= Type561Talent.accuracyMultiplier(this);
         // 56天赋：1-4V2
         if (buff(ShootGun.ShootTracker.class) != null) {
             accuracy *= 1.1F + 0.2F * pointsInTalent(Talent.Type56_14V2);
@@ -599,7 +602,8 @@ public class Hero extends Char {
 		
 		if (wep instanceof MissileWeapon){
 			if (Dungeon.level.adjacent( pos, target.pos )) {
-				accuracy *= (0.5f + 0.25f*pointsInTalent(Talent.POINT_BLANK));
+				// 女猎（隼）点射：近战距离投掷命中系数（实现见 HuntressTalent）
+				accuracy *= HuntressTalent.pointBlankAdjacentAccuracy(this);
 			} else {
 				accuracy *= 1.5f;
 			}
@@ -660,7 +664,8 @@ public class Hero extends Char {
 			return super.defenseVerb();
 		} else {
 			parry.parried = true;
-			if (buff(Combo.class).getComboCount() < 9 || pointsInTalent(Talent.ENHANCED_COMBO) < 2){
+			// 战士（UMP45）角斗士·强化连击：连击≥9且天赋+2以上招架保留（实现见 WarriorTalent）
+			if (!WarriorTalent.parryPersists(this, buff(Combo.class).getComboCount())){
 				parry.detach();
 			}
 			return Messages.get(Monk.class, "parried");
@@ -684,7 +689,7 @@ public class Hero extends Char {
             if (STR() < belongings.SecondArmor().STRReq()){
                 armDr -= 2*(belongings.SecondArmor().STRReq() - STR());
             }
-            armDr = Math.min( armDr, belongings.SecondArmor().tier * (1 + pointsInTalent( Talent.HOLD_FAST )));
+            armDr = Math.min( armDr, WarriorTalent.secondArmorDRCap(this, belongings.SecondArmor().tier));
             if (armDr > 0) dr += armDr;
         }
 		if (belongings.weapon() != null)  {
@@ -790,7 +795,8 @@ public class Hero extends Char {
 
 		NaturesPower.naturesPowerTracker natStrength = buff(NaturesPower.naturesPowerTracker.class);
 		if (natStrength != null){
-			speed *= (2f + 0.25f*pointsInTalent(Talent.GROWING_POWER));
+			// 女猎（隼）自然之力强化期间移速（实现见 HuntressTalent）
+			speed *= HuntressTalent.naturesPowerSpeedMultiplier(this);
 		}
 		
 		// GSH18天赋：后勤支援——拥有星之护盾时增加移动速度（实现见 GSH18Talent）
@@ -848,8 +854,8 @@ public class Hero extends Char {
 	}
 	
 	public float attackDelay() {
-		if (buff(Talent.LethalMomentumTracker.class) != null){
-			buff(Talent.LethalMomentumTracker.class).detach();
+		// 战士（UMP45）致命势能：消耗增益使本次攻击不耗回合（实现见 WarriorTalent）
+		if (WarriorTalent.consumeLethalMomentum(this)){
 			return 0;
 		}
 
@@ -985,9 +991,8 @@ public class Hero extends Char {
 			}
 		}
 		
-		if(hasTalent(Talent.BARKSKIN) && Dungeon.level.map[pos] == Terrain.FURROWED_GRASS){
-			Buff.affect(this, Barkskin.class).set( (lvl*pointsInTalent(Talent.BARKSKIN))/2, 1 );
-		}
+		// 女猎（隼）树肤：站在垄草上行动获得护盾（实现见 HuntressTalent）
+		HuntressTalent.applyBarkskinOnFurrowedGrass(this, pos);
 		
 		return actResult;
 	}
@@ -1479,12 +1484,8 @@ public class Hero extends Char {
 
 		if (wep != null) damage = wep.proc( this, enemy, damage );
 
-		if (buff(Talent.SpiritBladesTracker.class) != null
-				&& Random.Int(10) < 3*pointsInTalent(Talent.SPIRIT_BLADES)){
-			SpiritBow bow = belongings.getItem(SpiritBow.class);
-			if (bow != null) damage = bow.proc( this, enemy, damage );
-			buff(Talent.SpiritBladesTracker.class).detach();
-		}
+		// 女猎（隼）幽魂之刃T4：增益攻击附带灵弓伤害（实现见 HuntressTalent）
+		damage = HuntressTalent.spiritBladesAttack(this, enemy, damage);
 
 		damage = Talent.onAttackProc( this, enemy, damage );
 		
@@ -1500,7 +1501,8 @@ public class Hero extends Char {
 					@Override
 					protected boolean act() {
 						if (enemy.isAlive()) {
-							int bonusTurns = hasTalent(Talent.SHARED_UPGRADES) ? wep.buffedLvl() : 0;
+							// 女猎（隼）神射手·共享升级：标记额外持续武器等级回合（实现见 HuntressTalent）
+							int bonusTurns = HuntressTalent.sharedUpgradesBonusTurns(Hero.this, wep.buffedLvl());
 							Buff.prolong(Hero.this, SnipersMark.class, SnipersMark.DURATION + bonusTurns).set(enemy.id(), bonusTurns);
 						}
 						Actor.remove(this);
@@ -1588,10 +1590,8 @@ public class Hero extends Char {
 			dmg -= AntiMagic.drRoll( belongings.GlyphLevel(AntiMagic.class) );
 		}
 
-		if (buff(Talent.WarriorFoodImmunity.class) != null){
-			if (pointsInTalent(Talent.IRON_STOMACH) == 1)       dmg = Math.round(dmg*0.25f);
-			else if (pointsInTalent(Talent.IRON_STOMACH) == 2)  dmg = Math.round(dmg*0.00f);
-		}
+		// 战士（UMP45）铁胃：饥饿（debuff）伤害缩减（实现见 WarriorTalent）
+		dmg = WarriorTalent.applyFoodImmunityDamage(this, dmg);
 
 		int preHP = HP + shielding();
 		super.damage( dmg, src );
@@ -1878,7 +1878,7 @@ public class Hero extends Char {
         Commander.Command command = buff(Commander.Command.class);
         if (command != null && command.count()>0)
             exp *= 2;
-		this.exp += (int) (exp * (1+pointsInTalent(Talent.ELITE_ARMY)*2/3F));
+		this.exp += (int) (exp * Type561Talent.expMultiplier(this));
 
 		float percent = exp/(float)maxExp();
 
@@ -1904,12 +1904,8 @@ public class Hero extends Char {
 			for (Item i : belongings) {
 				i.onHeroGainExp(percent, this);
 			}
-			if (buff(Talent.RejuvenatingStepsFurrow.class) != null){
-				buff(Talent.RejuvenatingStepsFurrow.class).countDown(percent*200f);
-				if (buff(Talent.RejuvenatingStepsFurrow.class).count() <= 0){
-					buff(Talent.RejuvenatingStepsFurrow.class).detach();
-				}
-			}
+			// 女猎（隼）恢复步伐：垄沟计数随经验衰减（实现见 HuntressTalent）
+			HuntressTalent.onGainExpFurrow(this, percent);
 		}
 
 		boolean levelUp = false;
@@ -1917,11 +1913,8 @@ public class Hero extends Char {
 			this.exp -= maxExp();
             if (command != null && command.count()>0)
                 command.countDown(1);
-            if (pointsInTalent(Talent.WAND_PRESERVATION) == 2){
-                Talent.WandPreservationCounter counter = Buff.affect(this, Talent.WandPreservationCounter.class);
-                if (counter.count()>0)
-                    counter.countDown(1);
-            }
+            // 法师（G11）法杖保留+2：升级时消耗一层计数（实现见 MageTalent）
+            MageTalent.onHeroLevelUp(this);
 			if (lvl < MAX_LEVEL) {
 				lvl++;
 				levelUp = true;
@@ -2247,9 +2240,9 @@ public class Hero extends Char {
 		if (hit&&(buff(Talent.SiriusHeartTracker.class) != null)) {
 			com.shatteredpixel.shatteredpixeldungeon.actors.buffs.SiriusHeart.onAttack(this, enemy);
 		}
-        // 56天赋 - 攻击后移除buff
-        if (hit&&(buff(Talent.Type56BookTracker.class) != null)) {
-            buff(Talent.Type56BookTracker.class).detach();
+        // 56-1式天赋：攻击后消耗"知识的力量"buff（实现见 Type561Talent）
+        if (hit) {
+            Type561Talent.onAttackHit(this);
         }
 
 		//恢复主手武器
@@ -2347,9 +2340,10 @@ public class Hero extends Char {
 
 		boolean smthFound = false;
 
-		boolean circular = pointsInTalent(Talent.WIDE_SEARCH) == 1;
+		// 盗贼（UMP9）广泛搜索：+1环形/距离+1（实现见 RogueTalent）
+		boolean circular = RogueTalent.wideSearchCircular(this);
 		int distance = heroClass == HeroClass.ROGUE ? 2 : 1;
-		if (hasTalent(Talent.WIDE_SEARCH)) distance++;
+		distance += RogueTalent.wideSearchDistanceBonus(this);
 
 		boolean foresight = buff(Foresight.class) != null;
 		boolean foresightScan = foresight && !Dungeon.level.mapped[pos];
@@ -2424,11 +2418,8 @@ public class Hero extends Char {
 						//unintentional trap detection scales from 40% at floor 0 to 30% at floor 30
 						} else if (Dungeon.level.map[curr] == Terrain.SECRET_TRAP) {
 							chance = 0.3F + 0.1F * (1F - Statistics.deepestFloor / 30F);
-							if(hasTalent(Talent.TRAP_EXPERT)){
-								chance *= 1.5F;
-								if(pointsInTalent(Talent.TRAP_EXPERT)>=2)
-									chance *= 2F;
-							}
+							// 56-1式天赋：陷阱达人（旧版）提升陷阱发现率（实现见 Type561Talent）
+							chance *= Type561Talent.trapDetectionMultiplier(this);
 						//unintentional door detection scales from 20% at floor 0 to 0% at floor 25
 						} else {
 							chance=     0.2f*(1f-Dungeon.depth/25f);
@@ -2503,7 +2494,7 @@ public class Hero extends Char {
 		for (Item i : belongings){
 			if (i instanceof EquipableItem && i.isEquipped(this)){
 				((EquipableItem) i).activate(this);
-			} else if (i instanceof CloakOfShadows && i.keptThoughLostInvent && hasTalent(Talent.LIGHT_CLOAK)){
+			} else if (i instanceof CloakOfShadows && i.keptThoughLostInvent && RogueTalent.activatesLostCloak(this)){
 				((CloakOfShadows) i).activate(this);
 			} else if (i instanceof RedBook && i.keptThoughLostInvent && hasTalent(Talent.Type56Three_Book)){
                 ((RedBook) i).activate(this);

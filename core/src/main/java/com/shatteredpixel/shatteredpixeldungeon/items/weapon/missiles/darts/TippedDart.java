@@ -28,6 +28,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.PinCushion;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.HuntressTalent;
 import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfRegrowth;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Catalog;
@@ -137,7 +138,7 @@ public abstract class TippedDart extends Dart {
 	public float durabilityPerUse() {
 		float use = super.durabilityPerUse();
 		
-		use /= (1 + Dungeon.hero.pointsInTalent(Talent.DURABLE_TIPS));
+		use /= HuntressTalent.durableTipsDurabilityDivisor(Dungeon.hero);
 
 		//checks both destination and source position
 		float lotusPreserve = 0f;

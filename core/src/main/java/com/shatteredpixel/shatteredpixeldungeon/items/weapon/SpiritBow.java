@@ -29,6 +29,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.RevealedArea;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.HuntressTalent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.huntress.NaturesPower;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Splash;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.LeafParticle;
@@ -112,7 +113,7 @@ public class SpiritBow extends Weapon {
 				@Override
 				protected boolean act() {
 
-					if (Random.Int(12) < ((Hero)attacker).pointsInTalent(Talent.NATURES_WRATH)){
+					if (HuntressTalent.rollNaturesWrath((Hero) attacker)){
 						Plant plant = (Plant) Reflection.newInstance(Random.element(harmfulPlants));
 						plant.pos = defender.pos;
 						plant.activate( defender.isAlive() ? defender : null );
@@ -121,7 +122,7 @@ public class SpiritBow extends Weapon {
 					if (!defender.isAlive()){
 						NaturesPower.naturesPowerTracker tracker = attacker.buff(NaturesPower.naturesPowerTracker.class);
 						if (tracker != null){
-							tracker.extend(((Hero) attacker).pointsInTalent(Talent.WILD_MOMENTUM));
+							tracker.extend(HuntressTalent.wildMomentumTurns((Hero) attacker));
 						}
 					}
 
@@ -262,7 +263,7 @@ public class SpiritBow extends Weapon {
 		float speed = super.speedMultiplier(owner);
 		if (owner.buff(NaturesPower.naturesPowerTracker.class) != null){
 			// +33% speed to +50% speed, depending on talent points
-			speed += ((8 + ((Hero)owner).pointsInTalent(Talent.GROWING_POWER)) / 24f);
+			speed += HuntressTalent.growingPowerBoltSpeedBonus((Hero)owner);
 		}
 		return speed;
 	}
@@ -420,11 +421,10 @@ public class SpiritBow extends Weapon {
 				
 			} else {
 
-				if (user.hasTalent(Talent.SEER_SHOT)
-						&& user.buff(Talent.SeerShotCooldown.class) == null){
+				if (HuntressTalent.seerShotReady(user)){
 					int shotPos = throwPos(user, dst);
 					if (Actor.findChar(shotPos) == null) {
-						RevealedArea a = Buff.affect(user, RevealedArea.class, 5 * user.pointsInTalent(Talent.SEER_SHOT));
+						RevealedArea a = Buff.affect(user, RevealedArea.class, HuntressTalent.seerShotMaxDuration(user));
 						a.depth = Dungeon.depth;
 						a.pos = shotPos;
 						Buff.affect(user, Talent.SeerShotCooldown.class, 20f);

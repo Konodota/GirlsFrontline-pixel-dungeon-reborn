@@ -74,6 +74,8 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.MageTalent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.RogueTalent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.rogue.DeathMark;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.warrior.Endure;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Elemental;
@@ -190,7 +192,7 @@ public abstract class Char extends Actor {
 			return true;
 		} else if (c instanceof Hero
 				&& alignment == Alignment.ALLY
-				&& Dungeon.level.distance(pos, c.pos) <= 2* hero.pointsInTalent(Talent.ALLY_WARP)){
+				&& Dungeon.level.distance(pos, c.pos) <= MageTalent.allyWarpInteractDistance((Hero) c)){
 			return true;
 		} else {
 			return false;
@@ -214,8 +216,8 @@ public abstract class Char extends Actor {
 
 		int curPos = pos;
 
-		//warp instantly with allies in this case
-		if (c == hero && hero.hasTalent(Talent.ALLY_WARP)){
+		//warp instantly with allies in this case（法师G11盟军传送，实现见 MageTalent）
+		if (c == hero && MageTalent.hasAllyWarp(hero)){
 			PathFinder.buildDistanceMap(c.pos, BArray.or(Dungeon.level.passable, Dungeon.level.avoid, null));
 			if (PathFinder.distance[pos] == Integer.MAX_VALUE){
 				return true;
@@ -360,8 +362,9 @@ public abstract class Char extends Actor {
 			Preparation prep = buff(Preparation.class);
 			if (prep != null){
 				dmg = prep.damageRoll(this);
-				if (this == hero && hero.hasTalent(Talent.BOUNTY_HUNTER)) {
-					Buff.affect(hero, Talent.BountyHunterTracker.class, 0.0f);
+				// 盗贼（UMP9）赏金猎人：预谋伤害掷骰挂标记（实现见 RogueTalent）
+				if (this == hero) {
+					RogueTalent.onPreparationDamageRoll(hero);
 				}
 			} else {
 				dmg = damageRoll();

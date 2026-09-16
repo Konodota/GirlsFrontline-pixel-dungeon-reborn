@@ -33,6 +33,9 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicImmune;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.GSH18Talent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.HuntressTalent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.WarriorTalent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.Type561Talent;
 import com.shatteredpixel.shatteredpixeldungeon.items.DandelionOwner.CardCalculator;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.KindOfWeapon;
@@ -391,10 +394,8 @@ abstract public class Weapon extends KindOfWeapon {
         if (BuffLevelPoint != Integer.MIN_VALUE)
             return level;
 		if (isEquipped( hero ) || hero.belongings.contains( this )){
-            if (hero.buff(EquipLevelUp.class) != null)
-                level += Dungeon.hero.hasTalent(Talent.Type56FourTwoTwo)
-						? Dungeon.hero.pointsInTalent(Talent.Type56FourTwoTwo)
-						: 1;
+            // 56-1式天赋：火线补给T4-2电解糖分（实现见 Type561Talent）
+            level += Type561Talent.weaponLevelBonus(hero);
 			//超频瞄准镜不提升投掷武器的虚拟等级
 			if (!(this instanceof MissileWeapon)) {
 				level += RingOfKing.updateMultiplier(hero);
@@ -538,19 +539,11 @@ abstract public class Weapon extends KindOfWeapon {
 
 		protected float procChanceMultiplier( Char attacker ){
 			float multi = 1f;
-			if (attacker instanceof Hero && ((Hero) attacker).hasTalent(Talent.ENRAGED_CATALYST)){
-				Berserk rage = attacker.buff(Berserk.class);
-				if (rage != null) {
-					multi += (rage.rageAmount() * 0.15f) * ((Hero) attacker).pointsInTalent(Talent.ENRAGED_CATALYST);
-				}
-			}
-			if (attacker.buff(Talent.SpiritBladesTracker.class) != null
-					&& ((Hero)attacker).pointsInTalent(Talent.SPIRIT_BLADES) == 4){
-				multi += 0.1f;
-			}
-			if (attacker.buff(Talent.StrikingWaveTracker.class) != null
-					&& ((Hero)attacker).pointsInTalent(Talent.STRIKING_WAVE) == 4){
-				multi += 0.2f;
+			if (attacker instanceof Hero){
+				// 战士（UMP45）怒能催化 + 冲击波痕（实现见 WarriorTalent）
+				multi += WarriorTalent.enchantProcChanceBonus((Hero) attacker);
+				// 女猎（隼）幽魂之刃T4（实现见 HuntressTalent）
+				multi += HuntressTalent.spiritBladesEnchantBonus(attacker);
 			}
 			return multi;
 		}

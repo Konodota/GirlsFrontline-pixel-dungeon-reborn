@@ -26,6 +26,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.WarriorTalent;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.AlchemicalCatalyst;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfStrength;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
@@ -62,9 +63,9 @@ public class ElixirOfMight extends Elixir {
 
 		Talent.onPotionUsed( hero, mulOnTalentUsed );
 		Badges.validateStrengthAttained();
-		if (hero.hasTalentB(Talent.STRONGMAN))
-			if (Random.Int(20)<hero.pointsInTalent(Talent.STRONGMAN)+1)
-				new PotionOfStrength().apply(hero);
+		// 战士（UMP45）大力神：概率额外再获得一瓶力量药水效果（实现见 WarriorTalent）
+		if (WarriorTalent.rollStrongman(hero))
+			new PotionOfStrength().apply(hero);
 	}
 	
 	public String desc() {

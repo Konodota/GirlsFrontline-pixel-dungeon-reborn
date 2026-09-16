@@ -25,6 +25,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.RogueTalent;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
 import com.watabou.noosa.Image;
@@ -83,11 +84,7 @@ public class EnhancedRings extends FlavourBuff{
 
 	@Override
 	public float iconFadePercent() {
-		float max;
-        if (Dungeon.hero.hasTalent(Talent.ENHANCED_RINGS))
-            max = 3*Dungeon.hero.pointsInTalent(Talent.ENHANCED_RINGS);
-        else
-            max = 3;
+		float max = RogueTalent.enhancedRingsMaxCooldown(Dungeon.hero);
 		return Math.max(0, (max-visualcooldown()) / max);
 	}
 

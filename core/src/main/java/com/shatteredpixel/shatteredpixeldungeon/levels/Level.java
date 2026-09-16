@@ -46,6 +46,8 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.SuperAiFlight;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.HuntressTalent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.Type561Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.huntress.SpiritHawk;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Bestiary;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
@@ -1121,22 +1123,11 @@ public abstract class Level implements Bundlable {
 
 		if (!ch.flying){
 
-			if ( (map[ch.pos] == Terrain.GRASS || map[ch.pos] == Terrain.EMBERS)
-					&& ch == Dungeon.hero && Dungeon.hero.hasTalent(Talent.REJUVENATING_STEPS)
-					&& ch.buff(Talent.RejuvenatingStepsCooldown.class) == null){
-
-				if (Dungeon.hero.buff(LockedFloor.class) != null && !Dungeon.hero.buff(LockedFloor.class).regenOn()){
-					set(ch.pos, Terrain.FURROWED_GRASS);
-				} else if (ch.buff(Talent.RejuvenatingStepsFurrow.class) != null && ch.buff(Talent.RejuvenatingStepsFurrow.class).count() >= 200) {
-					set(ch.pos, Terrain.FURROWED_GRASS);
-				} else {
-					set(ch.pos, Terrain.HIGH_GRASS);
-					Buff.count(ch, Talent.RejuvenatingStepsFurrow.class, 3 - Dungeon.hero.pointsInTalent(Talent.REJUVENATING_STEPS));
-				}
-				GameScene.updateMap(ch.pos);
-				Buff.affect(ch, Talent.RejuvenatingStepsCooldown.class, 15f - 5f*Dungeon.hero.pointsInTalent(Talent.REJUVENATING_STEPS));
+			// 女猎（隼）恢复步伐：踩草地变高草/垄草（实现见 HuntressTalent）
+			if (ch == Dungeon.hero){
+				HuntressTalent.onGrassTrampled(Dungeon.hero, ch.pos);
 			}
-			
+
 			if (pit[ch.pos]){
 				if (ch == Dungeon.hero) {
 					Chasm.heroFall(ch.pos);
@@ -1283,10 +1274,10 @@ public abstract class Level implements Bundlable {
 			
 			int viewDist = c.viewDistance;
 			if (c instanceof Hero){
-				if(((Hero) c).hasTalent(Talent.NIGHT_EXPERT)
-						&& (Dungeon.level.feeling==Feeling.DARK || Dungeon.isChallenged(Challenges.DARKNESS)))
-					viewDist += 1;
-				viewDist *= 1f + 0.25f*((Hero) c).pointsInTalent(Talent.FARSIGHT);
+				// 56-1式天赋：夜战精英（旧版）黑暗中视野+1（实现见 Type561Talent）
+				viewDist += Type561Talent.viewDistanceBonus((Hero) c);
+				// 女猎（隼）远视视野乘数（实现见 HuntressTalent）
+				viewDist *= HuntressTalent.farsightMultiplier((Hero) c);
 			}
 			
 			ShadowCaster.castShadow( cx, cy, fieldOfView, blocking, viewDist );
@@ -1328,8 +1319,10 @@ public abstract class Level implements Bundlable {
 			}
 		}
 
-		if (c instanceof SpiritHawk.HawkAlly && Dungeon.hero.pointsInTalent(Talent.EAGLE_EYE) >= 3){
-			int range = 1+(Dungeon.hero.pointsInTalent(Talent.EAGLE_EYE)-2);
+		// 女猎（隼）灵鹰：鹰眼+3时灵鹰额外揭示周围敌人（实现见 HuntressTalent）
+		int hawkRange = HuntressTalent.hawkMindRange(Dungeon.hero);
+		if (c instanceof SpiritHawk.HawkAlly && hawkRange > 0){
+			int range = hawkRange;
 			for (Mob mob : mobs) {
 				int p = mob.pos;
 				if (!fieldOfView[p] && distance(c.pos, p) <= range) {
@@ -1356,10 +1349,11 @@ public abstract class Level implements Bundlable {
 						heroMindFov[mob.pos + i] = true;
 					}
 				}
-			} else if (((Hero) c).hasTalent(Talent.HEIGHTENED_SENSES)) {
+			} else {
 				Hero h = (Hero) c;
-				int range = 1+h.pointsInTalent(Talent.HEIGHTENED_SENSES);
-				for (Mob mob : mobs) {
+				// 女猎（隼）强化感官：心灵视野范围（实现见 HuntressTalent）
+				int range = HuntressTalent.heightenedSensesRange(h);
+				if (range > 0) for (Mob mob : mobs) {
 					int p = mob.pos;
 					if (!fieldOfView[p] && distance(c.pos, p) <= range) {
 						for (int i : PathFinder.NEIGHBOURS9) {

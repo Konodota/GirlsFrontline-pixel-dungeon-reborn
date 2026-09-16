@@ -24,6 +24,7 @@ package com.shatteredpixel.shatteredpixeldungeon.items.potions;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.WarriorTalent;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
@@ -49,9 +50,9 @@ public class PotionOfStrength extends Potion {
 		GLog.p( Messages.get(this, "msg_2") );
 		
 		Badges.validateStrengthAttained();
-        if (hero.hasTalentB(Talent.STRONGMAN))
-            if (Random.Int(20)<hero.pointsInTalent(Talent.STRONGMAN)+1)
-                apply(hero);
+        // 战士（UMP45）大力神：概率额外再获得一次力量提升（实现见 WarriorTalent）
+        if (WarriorTalent.rollStrongman(hero))
+            apply(hero);
 	}
 
 	@Override

@@ -35,6 +35,8 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.TalentSecondSight;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.HuntressTalent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.Type561Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.huntress.SpiritHawk;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Blacksmith;
@@ -867,31 +869,8 @@ public class Dungeon {
 
 	}
     public static void GetSight(){
-        if (Dungeon.hero!=null&&Dungeon.level!=null){
-            if(Dungeon.hero.hasTalent(Talent.Type56Two_Sight)) {
-                TalentSecondSight Sec = Dungeon.hero.buff(TalentSecondSight.class);
-                if (Sec==null){
-                    Buff.affect( Dungeon.hero, TalentSecondSight.class).Set(0, 0);
-                    Sec = Dungeon.hero.buff(TalentSecondSight.class);
-                    GLog.p("重新赋予");
-                }
-                if (Dungeon.level.FirstSight){
-                    Dungeon.level.FirstSight = false;
-                    Buff.affect(Dungeon.hero, MindVision.class, 3);
-                    //首次进入获得三回合灵视
-
-                    if (Dungeon.hero.pointsInTalent(Talent.Type56Two_Sight) == 2) {
-                        Sec.Set(Dungeon.levelId, 25);
-                        //天赋2级时才会计时25回合
-                    }
-                }
-
-                if (Dungeon.hero.pointsInTalent(Talent.Type56Two_Sight) == 2 && Sec.EndCD(Dungeon.levelId)&&Dungeon.level.SecondSight) {
-                    Dungeon.level.SecondSight = false;
-                    Buff.affect(Dungeon.hero, MindVision.class, 3);
-                }//计时结束后进入该楼层
-            }
-        }
+        // 56-1式天赋：战地侦察（实现见 Type561Talent）
+        Type561Talent.onLevelEnter();
     }
 
     public static Level tryLoadLevel(int levelId, boolean copy){//mark
@@ -970,7 +949,8 @@ public class Dungeon {
 	//default to recomputing based on max hero vision, in case vision just shrank/grew
 	public static void observe(){
 		int dist = Math.max(Dungeon.hero.viewDistance, 8);
-		dist *= 1f + 0.25f*Dungeon.hero.pointsInTalent(Talent.FARSIGHT);
+		// 女猎（隼）远视视野距离乘数（实现见 HuntressTalent）
+		dist *= HuntressTalent.farsightMultiplier(Dungeon.hero);
 
 		if (Dungeon.hero.buff(MagicalSight.class) != null){
 			dist = Math.max( dist, MagicalSight.DISTANCE );

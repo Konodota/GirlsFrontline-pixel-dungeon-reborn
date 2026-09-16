@@ -32,6 +32,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Paralysis;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.WarriorTalent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ArmorAbility;
 import com.shatteredpixel.shatteredpixeldungeon.effects.MagicMissile;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
@@ -73,12 +74,12 @@ public class Shockwave extends ArmorAbility {
 
 		Ballistica aim = new Ballistica(hero.pos, target, Ballistica.WONT_STOP);
 
-		int maxDist = 5 + hero.pointsInTalent(Talent.EXPANDING_WAVE);
+		int maxDist = 5 + WarriorTalent.expandingWaveBonus(hero);
 		int dist = Math.min(aim.dist, maxDist);
 
 		ConeAOE cone = new ConeAOE(aim,
 				dist,
-				60 + 15*hero.pointsInTalent(Talent.EXPANDING_WAVE),
+				60 + 15*WarriorTalent.expandingWaveBonus(hero),
 				Ballistica.STOP_SOLID | Ballistica.STOP_TARGET);
 
 		//cast to cells at the tip, rather than all cells, better performance.
@@ -109,14 +110,14 @@ public class Shockwave extends ArmorAbility {
 							if (ch != null && ch.alignment != hero.alignment){
 								int scalingStr = hero.STR()-10;
 								int damage = Random.NormalIntRange(5 + scalingStr, 10 + 2*scalingStr);
-								damage = Math.round(damage * (1f + 0.2f*hero.pointsInTalent(Talent.SHOCK_FORCE)));
+								damage = Math.round(damage * WarriorTalent.shockForceDamageMultiplier(hero));
 								damage -= ch.drRoll();
 
-								if (hero.pointsInTalent(Talent.STRIKING_WAVE) == 4){
+								if (WarriorTalent.strikingWaveMaxed(hero)){
 									Buff.affect(hero, Talent.StrikingWaveTracker.class, 0f);
 								}
 
-								if (Random.Int(10) < 3*hero.pointsInTalent(Talent.STRIKING_WAVE)){
+								if (WarriorTalent.rollStrikingWave(hero)){
 									damage = hero.attackProc(ch, damage);
 									ch.damage(damage, hero);
 									if (hero.subClass == HeroSubClass.GLADIATOR){
@@ -126,7 +127,7 @@ public class Shockwave extends ArmorAbility {
 									ch.damage(damage, hero);
 								}
 								if (ch.isAlive()){
-									if (Random.Int(4) < hero.pointsInTalent(Talent.SHOCK_FORCE)){
+									if (WarriorTalent.rollShockForceParalysis(hero)){
 										Buff.affect(ch, Paralysis.class, 5f);
 									} else {
 										Buff.affect(ch, Cripple.class, 5f);

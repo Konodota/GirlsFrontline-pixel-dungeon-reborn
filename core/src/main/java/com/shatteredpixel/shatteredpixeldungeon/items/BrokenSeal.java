@@ -28,6 +28,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Belongings;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.WarriorTalent;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.Bag;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
@@ -82,27 +83,24 @@ public class BrokenSeal extends Item {
         return info;
     }
     public boolean canTransferGlyph() {
-        if(Dungeon.hero.hasTalentA(Talent.RUNIC_TRANSFERENCE)){
-            if (this.glyph == null) {
-                return false;
-            } else if (Dungeon.hero.pointsInTalent(Talent.RUNIC_TRANSFERENCE) >= 1) {
-                return true;
-            } else {
-                return Dungeon.hero.pointsInTalent(Talent.RUNIC_TRANSFERENCE) == 0 && (Arrays.asList(Armor.Glyph.common).contains(this.glyph.getClass()) || Arrays.asList(Armor.Glyph.uncommon).contains(this.glyph.getClass()));
-            }
-        }
-        return false;
+        boolean glyphCommonOrUncommon = this.glyph != null
+                && (Arrays.asList(Armor.Glyph.common).contains(this.glyph.getClass())
+                    || Arrays.asList(Armor.Glyph.uncommon).contains(this.glyph.getClass()));
+        // 战士（UMP45）符文转移刻印判定（实现见 WarriorTalent）
+        return WarriorTalent.canTransferGlyph(Dungeon.hero, this.glyph != null, glyphCommonOrUncommon);
     }
 
 	public void setGlyph( Armor.Glyph glyph ){
 		this.glyph = glyph;
 	}
     public static boolean ExtractABLE(){
-        return Dungeon.hero.pointsInTalent(Talent.RUNIC_TRANSFERENCE) == 2;
+        // 战士（UMP45）符文转移+2可抽取刻印（实现见 WarriorTalent）
+        return WarriorTalent.glyphExtractable(Dungeon.hero);
     }
 
 	public int maxShield( int armTier, int armLvl ){
-		return armTier + armLvl + Dungeon.hero.pointsInTalent(Talent.IRON_WILL);
+		// 战士（UMP45）坚韧意志战士护盾加成（实现见 WarriorTalent）
+		return armTier + armLvl + WarriorTalent.warriorShieldBonus(Dungeon.hero);
 	}
 
 	@Override
@@ -266,9 +264,10 @@ public class BrokenSeal extends Item {
 		}
 
 		public synchronized int maxShield() {
-            //metamorphed iron will logic
-            if (((Hero)target).heroClass != HeroClass.WARRIOR && ((Hero) target).hasTalent(Talent.IRON_WILL)){
-                return ((Hero) target).pointsInTalent(Talent.IRON_WILL);
+            //metamorphed iron will logic（非战士蜕变出坚韧意志，实现见 WarriorTalent）
+            int metamorphShield = WarriorTalent.metamorphIronWillShield((Hero) target);
+            if (metamorphShield != -1){
+                return metamorphShield;
             }
 
 			if (armor != null && armor.isEquipped((Hero)target) && armor.checkSeal() != null) {

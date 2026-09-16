@@ -39,6 +39,8 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.GSH18Talent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.WarriorTalent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.Type561Talent;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.items.BrokenSeal;
 import com.shatteredpixel.shatteredpixeldungeon.items.EquipableItem;
@@ -265,16 +267,13 @@ public class Armor extends EquipableItem {
 				degrade();
 			}
 			if (detaching.getGlyph() != null){
-				if (hero.hasTalentA(Talent.RUNIC_TRANSFERENCE)
-						&& (Arrays.asList(Glyph.common).contains(detaching.getGlyph().getClass())
-							|| Arrays.asList(Glyph.uncommon).contains(detaching.getGlyph().getClass()))){
-                    //+0时检测天赋、携带的刻印稀有度
-					inscribe(null);
-				} else if (hero.pointsInTalent(Talent.RUNIC_TRANSFERENCE) >= 1){
-                    //+1时直接携带
+				boolean glyphCommonOrUncommon = Arrays.asList(Glyph.common).contains(detaching.getGlyph().getClass())
+						|| Arrays.asList(Glyph.uncommon).contains(detaching.getGlyph().getClass());
+				// 战士（UMP45）符文转移：刻印是否随列痕保留（实现见 WarriorTalent）
+				if (WarriorTalent.sealKeepsGlyphOnDetach(hero, glyphCommonOrUncommon)){
 					inscribe(null);
 				} else {
-                    //没有天赋时直接令袖章刻印清除
+					//没有天赋时直接令袖章刻印清除
 					detaching.setGlyph(null);
 				}
 			}
@@ -324,8 +323,8 @@ public class Armor extends EquipableItem {
 			onEquip(hero);
 			return true;
 		}
-        //新旧护甲都不适用于调整至副护甲时，按旧逻辑处理
-        if (hero.belongings.armor().tier() <= tier() || !hero.hasTalent(Talent.HOLD_FAST)){
+        //新旧护甲都不适用于调整至副护甲时，按旧逻辑处理（坚守天赋判定见 WarriorTalent）
+        if (WarriorTalent.useLegacyArmorEquip(hero, tier())){
             //因为加入了副护甲自动调整至主护甲的机制，所以旧逻辑不方便直接调用doUnequip，把原doUnequip的代码复制一份出来使用
             if (hero.belongings.armor.unEquipable(hero)) {
                 changeFirst(hero);
@@ -622,8 +621,8 @@ public class Armor extends EquipableItem {
 		}
 		float add = augment.evasionFactor(buffedLvl());
         if ( isSecond ){
-            int talent = hero.pointsInTalent(Talent.HOLD_FAST);
-            add = Math.min( (tier + talent) * (1 + talent) / 2F, add);
+            // 战士（UMP45）坚守：副护甲闪避上限（实现见 WarriorTalent）
+            add = Math.min( WarriorTalent.secondArmorEvasionCap(hero, tier()), add);
         }
 		return evasion + add;
 	}
@@ -701,20 +700,8 @@ public class Armor extends EquipableItem {
         if (BuffLevelPoint != Integer.MIN_VALUE)
             return level;
 		if (isEquipped( hero ) || hero.belongings.contains(this)) {
-            if (hero.buff(EquipLevelUp.class) != null) {
-                level += 1 + hero.pointsInTalent(Talent.Type56FourTwoTwo);
-            }
-            Hunger hunger = hero.buff(Hunger.class);
-            if (hunger != null) {
-                if (hero.hasTalent(Talent.Type56Two_Armor)) {
-                    if (hunger.full() >= 500 - 100 * hero.pointsInTalent(Talent.Type56Two_Armor))
-                        level += 1;
-                }
-                if (hero.hasTalent(Talent.Type56_22V2)) {
-                    if (hunger.isFull())
-                        level += hero.pointsInTalent(Talent.Type56_22V2);
-                }
-            }
+            // 56-1式天赋：火线补给/饭饱为钢/饱腹护甲（实现见 Type561Talent）
+            level = Type561Talent.armorLevelBonus(hero, level);
             //down at 200, 200+300, 200+300+400, ...
             level -= (int) ((Math.sqrt(200*broken + 22500) - 150)/100);
             level += RingOfKing.updateMultiplier(hero);
@@ -740,10 +727,8 @@ public class Armor extends EquipableItem {
 			} else{
 
                 //the chance from +4/5, and then +6 can be set to 0% with metamorphed runic transference
-                int lossChanceStart = 4;
-                if (Dungeon.hero != null && Dungeon.hero.heroClass != HeroClass.WARRIOR && Dungeon.hero.hasTalentA(Talent.RUNIC_TRANSFERENCE)){
-                    lossChanceStart += 1+Dungeon.hero.pointsInTalent(Talent.RUNIC_TRANSFERENCE);
-                }
+                // 非战士蜕变符文转移的刻印丢失强化等级加成（实现见 WarriorTalent）
+                int lossChanceStart = 4 + WarriorTalent.runicLossChanceBonus(Dungeon.hero);
 
                 if (level() >= lossChanceStart && Random.Float(10) < Math.pow(2, level()-4)) {
                     inscribe(null);

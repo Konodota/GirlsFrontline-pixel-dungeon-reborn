@@ -26,6 +26,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.RogueTalent;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.CloakOfShadows;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TimekeepersHourglass;
 import com.shatteredpixel.shatteredpixeldungeon.plants.Swiftthistle;
@@ -48,8 +49,9 @@ public class Invisibility extends FlavourBuff {
 			if (target instanceof Hero && ((Hero) target).subClass == HeroSubClass.ASSASSIN){
 				Buff.affect(target, Preparation.class);
 			}
-            if (target instanceof Hero && ((Hero) target).hasTalent(Talent.PROTECTIVE_SHADOWS)){
-                Buff.affect(target, Talent.ProtectiveShadowsTracker.class);
+            if (target instanceof Hero){
+                // 盗贼（UMP9）暗影护身：进入隐身时挂屏障追踪（实现见 RogueTalent）
+                RogueTalent.protectiveShadowsOnInvisible((Hero) target);
             }
 			return true;
 		} else {
@@ -97,7 +99,7 @@ public class Invisibility extends FlavourBuff {
 	public static void dispel(boolean Scroll) {
 		if (Dungeon.hero == null) return;
 
-        if (!Scroll || Dungeon.hero.pointsInTalent(Talent.MYSTICAL_UPGRADE) < 2) {
+        if (!Scroll || !RogueTalent.mysticalUpgradeBlocksScrollDispel(Dungeon.hero)) {
             for (Invisibility invis : Dungeon.hero.buffs(Invisibility.class)) {
                 invis.dispelA();
             }

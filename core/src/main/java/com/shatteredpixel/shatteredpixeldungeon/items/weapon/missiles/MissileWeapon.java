@@ -32,6 +32,8 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.RevealedArea;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.HuntressTalent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.RogueTalent;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.Bag;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.MagicalHolster;
@@ -151,7 +153,8 @@ abstract public class MissileWeapon extends Weapon {
 	public int throwPos(Hero user, int dst) {
 
 		boolean projecting = hasEnchant(Projecting.class, user);
-		if (!projecting && Random.Int(3) < user.pointsInTalent(Talent.SHARED_ENCHANTMENT)){
+		// 女猎（隼）共享附魔：投掷时概率借用灵弓附魔（实现见 HuntressTalent）
+		if (!projecting && HuntressTalent.rollSharedEnchantment(user)){
 			if (this instanceof Dart && ((Dart) this).crossbowHasEnchant(Dungeon.hero)){
 				//do nothing
 			} else {
@@ -172,8 +175,9 @@ abstract public class MissileWeapon extends Weapon {
 	@Override
 	public float accuracyFactor(Char owner) {
 		float accFactor = super.accuracyFactor(owner);
-		if (owner instanceof Hero && owner.buff(Momentum.class) != null && owner.buff(Momentum.class).freerunning()){
-			accFactor *= 1f + 0.25f*((Hero) owner).pointsInTalent(Talent.PROJECTILE_MOMENTUM);
+		// 盗贼（UMP9）弹射势能：疾跑中投掷命中（实现见 RogueTalent）
+		if (owner instanceof Hero){
+			accFactor = RogueTalent.projectileAccuracyFactor((Hero) owner, accFactor);
 		}
 		return accFactor;
 	}
@@ -189,11 +193,9 @@ abstract public class MissileWeapon extends Weapon {
 		Char enemy = Actor.findChar( cell );
 		if (enemy == null || enemy == curUser) {
             parent = null;
-            if (curUser.heroClass != HeroClass.HUNTRESS && curUser.hasTalent(Talent.SEER_SHOT)) {
-                RevealedArea a = Buff.affect(curUser, RevealedArea.class, 5 * curUser.pointsInTalent(Talent.SEER_SHOT));
-                a.depth = Dungeon.depth;
-                a.pos = cell;
-                Buff.affect(curUser, Talent.SeerShotCooldown.class, 20f);
+            // 女猎（隼）预知射击：投掷落空揭示落点（实现见 HuntressTalent）
+            if (HuntressTalent.appliesSeerShot(curUser)) {
+                HuntressTalent.applySeerShot(curUser, cell);
             }
             super.onThrow( cell );
 		} else {
@@ -210,7 +212,8 @@ abstract public class MissileWeapon extends Weapon {
 
 	@Override
 	public int proc(Char attacker, Char defender, int damage) {
-		if (attacker == Dungeon.hero && Random.Int(3) < Dungeon.hero.pointsInTalent(Talent.SHARED_ENCHANTMENT)){
+		// 女猎（隼）共享附魔：命中时概率借用灵弓附魔（实现见 HuntressTalent）
+		if (attacker == Dungeon.hero && HuntressTalent.rollSharedEnchantment(Dungeon.hero)){
 			if (this instanceof Dart && ((Dart) this).crossbowHasEnchant(Dungeon.hero)){
 				//do nothing
 			} else {
@@ -278,10 +281,8 @@ abstract public class MissileWeapon extends Weapon {
 	public float durabilityPerUse(){
 		float usages = baseUses * (float)(Math.pow(3, level()));
 
-		//+50%/75% durability
-		if (Dungeon.hero.hasTalent(Talent.DURABLE_PROJECTILES)){
-			usages *= 1.25f + (0.25f*Dungeon.hero.pointsInTalent(Talent.DURABLE_PROJECTILES));
-		}
+		// 女猎（隼）耐久弹药：投掷武器耐久系数（实现见 HuntressTalent）
+		usages *= HuntressTalent.durableProjectilesFactor(Dungeon.hero);
 		if (holster) {
 			usages *= MagicalHolster.HOLSTER_DURABILITY_FACTOR;
 		}
@@ -330,9 +331,8 @@ abstract public class MissileWeapon extends Weapon {
 			if (exStr > 0) {
 				damage += Random.IntRange( 0, exStr );
 			}
-			if (owner.buff(Momentum.class) != null && owner.buff(Momentum.class).freerunning()) {
-				damage = Math.round(damage * (1f + 0.15f * ((Hero) owner).pointsInTalent(Talent.PROJECTILE_MOMENTUM)));
-			}
+			// 盗贼（UMP9）弹射势能：疾跑中投掷伤害（实现见 RogueTalent）
+			damage = RogueTalent.projectileDamage((Hero) owner, damage);
 		}
 		
 		return damage;

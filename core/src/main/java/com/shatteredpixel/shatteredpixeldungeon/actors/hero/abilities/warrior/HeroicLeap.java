@@ -30,6 +30,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Invisibility;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vulnerable;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.WarriorTalent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ArmorAbility;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.ClassArmor;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfBlastWave;
@@ -58,7 +59,7 @@ public class HeroicLeap extends ArmorAbility {
 		float chargeUse = super.chargeUse(hero);
 		if (hero.buff(DoubleJumpTracker.class) != null){
 			//reduced charge use by 16%/30%/41%/50%
-			chargeUse *= Math.pow(0.84, hero.pointsInTalent(Talent.DOUBLE_JUMP));
+			chargeUse *= WarriorTalent.doubleJumpChargeFactor(hero);
 		}
 		return chargeUse;
 	}
@@ -93,16 +94,16 @@ public class HeroicLeap extends ArmorAbility {
 					for (int i : PathFinder.NEIGHBOURS8) {
 						Char mob = Actor.findChar(hero.pos + i);
 						if (mob != null && mob != hero && mob.alignment != Char.Alignment.ALLY) {
-							if (hero.hasTalent(Talent.BODY_SLAM)){
-								int damage = hero.drRoll();
-								damage = Math.round(damage*0.25f*hero.pointsInTalent(Talent.BODY_SLAM));
+							// 战士（UMP45）T4 巨力撞击/冲击波（实现见 WarriorTalent）
+							if (WarriorTalent.hasBodySlam(hero)){
+								int damage = WarriorTalent.bodySlamDamage(hero);
 								mob.damage(damage, hero);
 							}
-							if (mob.pos == hero.pos + i && hero.hasTalent(Talent.IMPACT_WAVE)){
+							if (mob.pos == hero.pos + i && WarriorTalent.impactWaveStrength(hero) > 0){
 								Ballistica trajectory = new Ballistica(mob.pos, mob.pos + i, Ballistica.MAGIC_BOLT);
-								int strength = 1+hero.pointsInTalent(Talent.IMPACT_WAVE);
+								int strength = WarriorTalent.impactWaveStrength(hero);
 								WandOfBlastWave.throwChar(mob, trajectory, strength, true);
-								if (Random.Int(4) < hero.pointsInTalent(Talent.IMPACT_WAVE)){
+								if (WarriorTalent.rollImpactWaveVulnerable(hero)){
 									Buff.prolong(mob, Vulnerable.class, 3f);
 								}
 							}
@@ -118,7 +119,7 @@ public class HeroicLeap extends ArmorAbility {
 					if (hero.buff(DoubleJumpTracker.class) != null){
 						hero.buff(DoubleJumpTracker.class).detach();
 					} else {
-						if (hero.hasTalent(Talent.DOUBLE_JUMP)) {
+						if (WarriorTalent.hasDoubleJump(hero)) {
 							Buff.affect(hero, DoubleJumpTracker.class, 3);
 						}
 					}

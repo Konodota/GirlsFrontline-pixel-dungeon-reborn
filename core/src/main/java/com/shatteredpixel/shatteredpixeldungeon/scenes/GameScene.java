@@ -36,6 +36,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.ChampionEnemy;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.RogueTalent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Bestiary;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.DemonSpawner;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
@@ -627,7 +628,7 @@ public class GameScene extends PixelScene {
 				}
 			}
 
-			if (Dungeon.hero.hasTalent(Talent.ROGUES_FORESIGHT)
+			if (RogueTalent.hasRoguesForesight(Dungeon.hero)
 					&& Dungeon.level instanceof RegularLevel){
 				boolean reqSecrets = false;
 				for (Room r : ((RegularLevel) Dungeon.level).rooms()){
@@ -641,7 +642,7 @@ public class GameScene extends PixelScene {
 
 				//50%/100% chance, use level's seed so that we get the same result for the same level
 				Random.pushGenerator(Dungeon.seedCurLevel());
-					if (reqSecrets && Random.Int(2)+1 <= Dungeon.hero.pointsInTalent(Talent.ROGUES_FORESIGHT)){
+					if (reqSecrets && RogueTalent.rollRoguesForesightHint(Dungeon.hero)){
 						GLog.p(Messages.get(this, "secret_hint"));
 					}
 				Random.popGenerator();

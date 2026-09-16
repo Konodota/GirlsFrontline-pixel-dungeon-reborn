@@ -26,6 +26,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.WarriorTalent;
 import com.shatteredpixel.shatteredpixeldungeon.effects.SpellSprite;
 import com.shatteredpixel.shatteredpixeldungeon.items.BrokenSeal.WarriorShield;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
@@ -96,7 +97,7 @@ public class Berserk extends Buff {
 				}
 			} else {
 				state = State.RECOVERING;
-				levelRecovery = LEVEL_RECOVER_START - Dungeon.hero.pointsInTalent(Talent.BERSERKING_STAMINA)/3f;
+				levelRecovery = LEVEL_RECOVER_START - WarriorTalent.berserkingStaminaRecoveryDelay(Dungeon.hero);
 				if (buff != null) buff.absorbDamage(buff.shielding());
 				power = 0f;
 			}
@@ -109,7 +110,7 @@ public class Berserk extends Buff {
                     power -= GameMath.gate(0.1f, power - min, 1f) * 0.067f * (float) Math.pow(Math.max(0, (target.HP / (float) target.HT) - min), 2);
                     power = Math.max(Dungeon.hero.STR()*0.015F, power);
                 }
-                powerLossBuffer = Dungeon.hero.pointsInTalent(Talent.ENDLESS_RAGE)/2;
+                powerLossBuffer = WarriorTalent.endlessRagePowerLossBuffer(Dungeon.hero);
 			}
 		}
 		spend(TICK);
@@ -134,7 +135,7 @@ public class Berserk extends Buff {
 			if (shield != null){
 				state = State.BERSERK;
 				int shieldAmount = Math.max(4, shield.maxShield()) * 8;
-				shieldAmount = Math.round(shieldAmount * (1f + Dungeon.hero.pointsInTalent(Talent.BERSERKING_STAMINA)/4f));
+				shieldAmount = Math.round(shieldAmount * WarriorTalent.berserkingStaminaShieldMultiplier(Dungeon.hero));
 				shield.supercharge(shieldAmount);
 
 				SpellSprite.show(target, SpellSprite.BERSERK);
@@ -149,7 +150,7 @@ public class Berserk extends Buff {
 	
 	public void damage(int damage){
 		if (state == State.RECOVERING) return;
-		float maxPower = 1f + 0.1f*((Hero)target).pointsInTalent(Talent.ENDLESS_RAGE);
+		float maxPower = WarriorTalent.endlessRageMaxPower((Hero)target);
 		power = Math.min(maxPower, power + (damage/(float)target.HT)/3f );
 		BuffIndicator.refreshHero(); //show new power immediately
 		powerLossBuffer = 3; //2 turns until rage starts dropping

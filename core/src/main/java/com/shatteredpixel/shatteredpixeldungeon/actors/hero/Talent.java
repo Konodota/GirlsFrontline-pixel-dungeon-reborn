@@ -32,6 +32,11 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.ArtifactRecharge;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Barrier;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.GSH18Talent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.HuntressTalent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.MageTalent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.RogueTalent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.Type561Talent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.WarriorTalent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.CounterBuff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Cripple;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.EnhancedRings;
@@ -440,89 +445,14 @@ public enum Talent {
 	}
 
 	public static void onTalentUpgraded( Hero hero, Talent talent){
-        Item workingItem;
-        if (talent == NATURES_BOUNTY){
-            if ( hero.pointsInTalent(NATURES_BOUNTY) == 1) Buff.count(hero, NatureBerriesAvailable.class, 4);
-            else                                           Buff.count(hero, NatureBerriesAvailable.class, 2);
-        }
-        else if (talent == CACHED_RATIONS){
-            if ( hero.pointsInTalent(CACHED_RATIONS) == 1) Buff.count(hero, CachedRationsDropped.class, 4);
-            else                                           Buff.count(hero, CachedRationsDropped.class, 2);
-        }
-        else if (talent == Type56One_FOOD){
-            if ( hero.pointsInTalent(Type56One_FOOD) == 1) Buff.count(hero, ZongziDropped.class, 4);
-            else                                           Buff.count(hero, ZongziDropped.class, 2);
-        }
-		else if (talent == ARMSMASTERS_INTUITION && hero.pointsInTalent(ARMSMASTERS_INTUITION) == 2){
-			if (hero.belongings.weapon() != null) hero.belongings.weapon().identify();
-            if (hero.belongings.armor() != null)  hero.belongings.armor.identify();
-            if (hero.belongings.SecondArmor() != null)  hero.belongings.secArmor.identify();
-		}
-		else if (talent == THIEFS_INTUITION && hero.pointsInTalent(THIEFS_INTUITION) == 2){
-			if (hero.belongings.ring != null) hero.belongings.ring.identify();
-			if (hero.belongings.misc instanceof Ring) hero.belongings.misc.identify();
-			for (Item item : Dungeon.hero.belongings)
-				if (item instanceof Ring)
-					((Ring) item).setKnown();
-		}
-        else if (talent == Type56One_Identify && hero.pointsInTalent(Type56One_Identify) == 2){
-            for (Item item : Dungeon.hero.belongings)
-                if (item instanceof MeleeWeapon || item instanceof Armor){
-                    item.cursedKnown = true;
-                    Item.updateQuickslot();
-                }
-        }
-		else if (talent == THIEFS_INTUITION && hero.pointsInTalent(THIEFS_INTUITION) == 1){
-			if (hero.belongings.ring != null) hero.belongings.ring.setKnown();
-			if (hero.belongings.misc instanceof Ring) ((Ring) hero.belongings.misc).setKnown();
-		}
-        else if (talent == STRONGMAN){
-            int times ;
-            if (hero.STR >= Integer.MAX_VALUE / 1.06F){
-                times = 1;
-                hero.STR = Integer.MAX_VALUE;
-            }
-            else if (hero.STR >= 100_000){
-                times = 1000;
-                hero.STR *= Random.Float(1.045F, 1.054F);
-            }else {
-                times = hero.STR;
-            }
-            for (int i = 0; i < times; i++) {
-                if (hero.STR == Integer.MAX_VALUE || hero.STR == Integer.MIN_VALUE){
-                    if (Random.Float() < 1/3F)
-                        hero.STR = Integer.MIN_VALUE;
-                    break;
-                }
-                if (Random.Float() < 0.05F) {
-                    hero.STR++;
-                    times++;
-                }
-            }
-            Badges.validateStrengthAttained();
-        }
-		else if (talent == LIGHT_CLOAK && hero.pointsInTalent(LIGHT_CLOAK) == 1){
-            if ((workingItem = hero.belongings.getItem(CloakOfShadows.class)) != null)
-                ((CloakOfShadows) workingItem).activate(Dungeon.hero);
-		}
-        else if (talent == Type56Three_Book && hero.pointsInTalent(Type56Three_Book) == 1){
-            if ((workingItem = hero.belongings.getItem(RedBook.class)) != null)
-                ((RedBook) workingItem).activate(Dungeon.hero);
-        }
-		else if (talent == HEIGHTENED_SENSES || talent == FARSIGHT)
-			Dungeon.observe();
-        else if (talent == Type56Two_Sight){
-            Buff.affect( Dungeon.hero, TalentSecondSight.class).Set(Dungeon.levelId, 0);
-            if (Dungeon.hero.pointsInTalent(Talent.Type56Two_Sight) == 1){
-                Dungeon.level.FirstSight = false;
-                Buff.affect(Dungeon.hero, MindVision.class, 3);
-            }else if (Dungeon.hero.pointsInTalent(Talent.Type56Two_Sight) == 2) {
-                Dungeon.level.SecondSight = false;
-                Buff.affect(Dungeon.hero, MindVision.class, 3);
-            }
-        }
-        else if (talent == PROTECTIVE_SHADOWS && hero.invisible > 0)
-            Buff.affect(hero, Talent.ProtectiveShadowsTracker.class);
+        // 56-1式角色天赋升级逻辑（实现见 Type561Talent）
+        Type561Talent.onTalentUpgraded(hero, talent);
+        // 战士（UMP45）天赋升级逻辑（武器大师直觉/大力神，实现见 WarriorTalent）
+        WarriorTalent.onTalentUpgraded(hero, talent);
+        // 盗贼（UMP9）天赋升级逻辑（储备口粮/盗贼直觉/轻身披风/暗影护身，实现见 RogueTalent）
+        RogueTalent.onTalentUpgraded(hero, talent);
+        // 女猎（隼）天赋升级逻辑（自然馈赠/强化感官/远视，实现见 HuntressTalent）
+        HuntressTalent.onTalentUpgraded(hero, talent);
 	}
 
 	public static class CachedRationsDropped extends CounterBuff{{revivePersists = true;}}
@@ -530,55 +460,20 @@ public enum Talent {
 	public static class NatureBerriesAvailable extends CounterBuff{{revivePersists = true;}}
 
 	public static void onFoodEaten(Hero hero, float foodVal, Item foodSource) {
-        if (hero.hasTalent(HEARTY_MEAL)) {
-            //3/5 HP healed, when hero is below 25% health
-            if (hero.HP <= hero.HT / 4) {
-                hero.HP = Math.min(hero.HP + 1 + 2 * hero.pointsInTalent(HEARTY_MEAL), hero.HT);
-                hero.sprite.emitter().burst(Speck.factory(Speck.HEALING), 1 + hero.pointsInTalent(HEARTY_MEAL));
-                //2/3 HP healed, when hero is below 50% health
-            } else if (hero.HP <= hero.HT / 2) {
-                hero.HP = Math.min(hero.HP + 1 + hero.pointsInTalent(HEARTY_MEAL), hero.HT);
-                hero.sprite.emitter().burst(Speck.factory(Speck.HEALING), hero.pointsInTalent(HEARTY_MEAL));
-            }
-        }
-        if (hero.hasTalent(IRON_STOMACH)) {
-            if (hero.cooldown() > 0) {
-                Buff.affect(hero, WarriorFoodImmunity.class, hero.cooldown());
-            }
-        }
-        if (hero.hasTalent(EMPOWERING_MEAL)) {
-            //2/3 bonus wand damage for next 3 zaps
-            Buff.affect(hero, WandEmpower.class).set(1 + hero.pointsInTalent(EMPOWERING_MEAL), 3);
-            ScrollOfRecharging.chargeParticle(hero);
-        }
-        if (hero.hasTalent(ENERGIZING_MEAL)) {
-            //5/8 turns of recharging
-            Buff.prolong(hero, Recharging.class, 2 + 3 * (hero.pointsInTalent(ENERGIZING_MEAL)));
-            ScrollOfRecharging.chargeParticle(hero);
-        }
-        if (hero.hasTalent(MYSTICAL_MEAL)) {
-            //3/5 turns of recharging
-            ArtifactRecharge buff = Buff.affect(hero, ArtifactRecharge.class);
-            if (buff.left() < 1 + 2 * (hero.pointsInTalent(MYSTICAL_MEAL))) {
-                Buff.affect(hero, ArtifactRecharge.class).set(1 + 2 * (hero.pointsInTalent(MYSTICAL_MEAL))).ignoreHornOfPlenty = foodSource instanceof HornOfPlenty;
-            }
-            ScrollOfRecharging.chargeParticle(hero);
-        }
-        if (hero.hasTalent(INVIGORATING_MEAL)) {
-            //effectively 1/2 turns of haste
-            Buff.prolong(hero, Haste.class, 0.67f + hero.pointsInTalent(INVIGORATING_MEAL));
-        }
+        // 战士（UMP45）进食天赋（丰盛大餐/铁胃，实现见 WarriorTalent）
+        WarriorTalent.onFoodEaten(hero);
+        // 法师（G11）进食天赋（充能一餐/回能一餐，实现见 MageTalent）
+        MageTalent.onFoodEaten(hero);
+        // 盗贼（UMP9）进食天赋（神秘一餐，实现见 RogueTalent）
+        RogueTalent.onFoodEaten(hero, foodSource);
+        // 女猎（隼）进食天赋（振奋一餐，实现见 HuntressTalent）
+        HuntressTalent.onFoodEaten(hero);
 
         // GSH18角色进食相关天赋（疗养一餐/元气一餐，实现见 GSH18Talent）
         GSH18Talent.onFoodEaten(hero);
 
-        if (Dungeon.hero.hasTalent(Talent.Type56_21V2)){
-            if (Dungeon.hero.HP < Dungeon.hero.HT) {
-                int add = (int) (Dungeon.hero.HT*(0.02*Dungeon.hero.pointsInTalent(Talent.Type56_21V2)+0.01F));
-                Dungeon.hero.HP = Math.min( Dungeon.hero.HP + add, Dungeon.hero.HT );
-                Dungeon.hero.sprite.emitter().burst( Speck.factory( Speck.HEALING ), 1 );
-            }
-        }
+        // 56-1式角色进食相关天赋（饭饱为钢旧版回血，实现见 Type561Talent）
+        Type561Talent.onFoodEaten(hero);
     }
 
 	public static class WarriorFoodImmunity extends FlavourBuff{
@@ -586,24 +481,17 @@ public enum Talent {
 	}
 
 	public static float itemIDSpeedFactor( Hero hero, Item item ){
-		// 1.75x/2.5x speed with huntress talent
-		float factor = 1f + hero.pointsInTalent(SURVIVALISTS_INTUITION) * 0.75f;
-		// 2x/instant for Warrior (see onItemEquipped)
-		if (item instanceof MeleeWeapon || item instanceof Armor){
-            factor *= 1.25f + hero.pointsInTalent(Type56One_Identify) * 0.75f;
-			factor *= 1f + hero.pointsInTalent(ARMSMASTERS_INTUITION);
-		}
-		// 3x/instant for mage (see Wand.wandUsed())
-		if (item instanceof Wand){
-			factor *= 1f + 2 * hero.pointsInTalent(SCHOLARS_INTUITION);
-		}
-		// 2x/instant for rogue (see onItemEqupped), also id's type on equip/on pickup
-		if (item instanceof Ring){
-			factor *= 1f + hero.pointsInTalent(THIEFS_INTUITION);
-		}
-        if (item instanceof MeleeWeapon){
-            factor *= 1F + 2 * hero.pointsInTalent(OLD_SOLDIER);
-        }
+		float factor = 1f;
+		// 女猎（隼）生存主义者直觉（实现见 HuntressTalent）
+		factor = HuntressTalent.itemIDSpeedFactor(hero, factor);
+		// 战士（UMP45）武器大师直觉（实现见 WarriorTalent）
+		factor = WarriorTalent.itemIDSpeedFactor(hero, item, factor);
+		// 法师（G11）学者直觉（实现见 MageTalent）
+		factor = MageTalent.itemIDSpeedFactor(hero, item, factor);
+		// 盗贼（UMP9）盗贼直觉（实现见 RogueTalent）
+		factor = RogueTalent.itemIDSpeedFactor(hero, item, factor);
+		// 56-1式角色鉴定速度（百战老兵/战场老兵旧版，实现见 Type561Talent）
+		factor *= Type561Talent.itemIDSpeedFactor(hero, item);
 		return factor;
 	}
 
@@ -611,64 +499,19 @@ public enum Talent {
         onPotionUsed(hero, mul, hero.pos);
     }
 	public static void onPotionUsed( Hero hero, float mul, int pos ){
-		if (hero.hasTalent(RESTORED_WILLPOWER)){
-			ShieldBuff shield = hero.buff(BrokenSeal.WarriorShield.class);
-            int shieldToGive = Math.round( hero.HT/100F*hero.pointsInTalent(RESTORED_WILLPOWER)*3.5F*mul );
-			if (shield != null){
-                ((BrokenSeal.WarriorShield) shield).supercharge(shieldToGive);
-			}
-            else {
-                shield = Buff.affect(hero, Barrier.class);
-                shield.setShield(shieldToGive);
-            }
-		}
+		// 战士（UMP45）药水天赋（重振决心，实现见 WarriorTalent）
+		WarriorTalent.onPotionUsed(hero, mul);
 		// GSH18角色药水相关天赋（医护兼容，实现见 GSH18Talent）
 		GSH18Talent.onPotionUsed(hero, mul);
-		if (hero.hasTalent(RESTORED_NATURE)){
-			ArrayList<Integer> grassCells = new ArrayList<>();
-			for (int i : PathFinder.NEIGHBOURS8){
-				grassCells.add(pos+i);
-			}
-			Random.shuffle(grassCells);
-			for (int cell : grassCells){
-				Char ch = Actor.findChar(cell);
-				if (ch != null && ch.alignment == Char.Alignment.ENEMY){
-					Buff.affect(ch, Roots.class, (1f + hero.pointsInTalent(RESTORED_NATURE))*mul );
-				}
-				if (Dungeon.level.map[cell] == Terrain.EMPTY ||
-						Dungeon.level.map[cell] == Terrain.EMBERS ||
-						Dungeon.level.map[cell] == Terrain.EMPTY_DECO){
-					Level.set(cell, Terrain.GRASS);
-					GameScene.updateMap(cell);
-				}
-				CellEmitter.get(cell).burst(LeafParticle.LEVEL_SPECIFIC, 4);
-			}
-			if (hero.pointsInTalent(RESTORED_NATURE) == 1 && mul != 2){
-				grassCells.remove(0);
-				grassCells.remove(0);
-                if (mul != 1.25F)
-				    grassCells.remove(0);
-			}
-			for (int cell : grassCells){
-				int t = Dungeon.level.map[cell];
-				if ((t == Terrain.EMPTY || t == Terrain.EMPTY_DECO || t == Terrain.EMBERS
-						|| t == Terrain.GRASS || t == Terrain.FURROWED_GRASS)
-						&& Dungeon.level.plants.get(cell) == null){
-					Level.set(cell, Terrain.HIGH_GRASS);
-					GameScene.updateMap(cell);
-				}
-			}
-			Dungeon.observe();
-		}
+		// 女猎（隼）药水天赋（自然修复，实现见 HuntressTalent）
+		HuntressTalent.onPotionUsed(hero, mul, pos);
 	}
 
 	public static void onScrollUsed( Hero hero, float mul ){
-		if (hero.hasTalent(ENERGIZING_UPGRADE)){
-            Buff.prolong(hero, Recharging.class, 4*mul);
-		}
-		if (hero.hasTalent(MYSTICAL_UPGRADE)){
-            Buff.prolong(hero, Invisibility.class, 4*mul);
-		}
+		// 法师（G11）卷轴天赋（充能升级，实现见 MageTalent）
+		MageTalent.onScrollUsed(hero, mul);
+		// 盗贼（UMP9）卷轴天赋（神秘升级，实现见 RogueTalent）
+		RogueTalent.onScrollUsed(hero, mul);
         float wandMul = Math.min(1, mul) ;
         if (hero.hasTalent(Talent.EMPOWERING_SCROLLS)){
             Buff.affect(hero, ScrollEmpower.class).reset( 1, (int) (hero.pointsInTalent(Talent.EMPOWERING_SCROLLS)*2*wandMul));
@@ -682,9 +525,9 @@ public enum Talent {
 	}
 
 	public static void onArtifactUsed( Hero hero ){
-		if (hero.hasTalent(ENHANCED_RINGS)){
-			Buff.prolong(hero, EnhancedRings.class, 3f * hero.pointsInTalent(ENHANCED_RINGS)).set(1);
-            hero.updateHT(false);
+		// 盗贼（UMP9）神器天赋（强化戒指，实现见 RogueTalent）；未处理时再判断蜕变V2
+		if (RogueTalent.onArtifactUsed(hero)){
+			// ENHANCED_RINGS 已在 RogueTalent 内处理
 		}
         else if (hero.hasTalent(ENHANCED_RINGS_V2) && hero.buff(EnhancedRings.CoolDown.class) == null){
             Buff.prolong(hero, EnhancedRings.class, 3).set(hero.pointsInTalent(ENHANCED_RINGS_V2));
@@ -693,126 +536,49 @@ public enum Talent {
 	}
 
 	public static void onItemEquipped( Hero hero, Item item ){
-		if(hero.pointsInTalent(ARMSMASTERS_INTUITION) == 2 && (item instanceof Weapon || item instanceof Armor))
-			item.identify();
+		// 战士（UMP45）装备后鉴定（武器大师直觉，实现见 WarriorTalent）
+		WarriorTalent.onItemEquipped(hero, item);
 
-        if (hero.pointsInTalent(OLD_SOLDIER) == 2 && item instanceof Weapon)
-            item.identify();
+		// 56-1式角色装备后鉴定（战场老兵旧版，实现见 Type561Talent）
+		Type561Talent.onItemEquipped(hero, item);
 
-		if(hero.hasTalent(THIEFS_INTUITION) && item instanceof Ring){
-			if(hero.pointsInTalent(THIEFS_INTUITION) == 2){
-				item.identify();
-			}else{
-				((Ring) item).setKnown();
-			}
-		}
+		// 盗贼（UMP9）装备戒指（盗贼直觉，实现见 RogueTalent）
+		RogueTalent.onItemEquipped(hero, item);
 	}
 
 	public static void onItemCollected( Hero hero, Item item ){
-		if(hero.pointsInTalent(THIEFS_INTUITION) == 2 && item instanceof Ring)
-            ((Ring) item).setKnown();
+		// 盗贼（UMP9）获取戒指标记已知（盗贼直觉，实现见 RogueTalent）
+		RogueTalent.onItemCollected(hero, item);
 
-        if(hero.pointsInTalent(Type56One_Identify) == 2 && (item instanceof MeleeWeapon || item instanceof Armor)) {
-            item.cursedKnown = true;
-            Item.updateQuickslot();
-        }
-
-        if (hero.pointsInTalent(OLD_SOLDIER) == 2 && item instanceof MeleeWeapon) {
-            item.cursedKnown = true;
-            Item.updateQuickslot();
-        }
+		// 56-1式角色获取物品时标记诅咒（百战老兵/战场老兵旧版，实现见 Type561Talent）
+		Type561Talent.onItemCollected(hero, item);
 	}
 
 	//note that IDing can happen in alchemy scene, so be careful with VFX here
 	public static void onItemIdentified( Hero hero, Item item ){
-		if (hero.hasTalent(TEST_SUBJECT)){
-			//heal for 2/3 HP
-			hero.HP = Math.min(hero.HP + 1 + hero.pointsInTalent(TEST_SUBJECT), hero.HT);
-			if (hero.sprite != null) {
-				Emitter e = hero.sprite.emitter();
-				if (e != null) e.burst(Speck.factory(Speck.HEALING), hero.pointsInTalent(TEST_SUBJECT));
-			}
-		}
-		if (hero.hasTalent(TESTED_HYPOTHESIS)){
-			//2/3 turns of wand recharging
-			Buff.affect(hero, Recharging.class, 1f + hero.pointsInTalent(TESTED_HYPOTHESIS));
-			ScrollOfRecharging.chargeParticle(hero);
-		}
+		// 战士（UMP45）鉴定回血（试验对象，实现见 WarriorTalent）
+		WarriorTalent.onItemIdentified(hero, item);
+		// 法师（G11）鉴定回充（验证假说，实现见 MageTalent）
+		MageTalent.onItemIdentified(hero, item);
 	}
     public static int onDefenceProc(Hero hero, Char enemy, int dmg){
-        if(hero.pointsInTalent(Talent.NIGHT_EXPERT)>=2)
-            Buff.append(enemy, TalismanOfForesight.CharAwareness.class,2f).charID = enemy.id();
-        return dmg;
+        // 56-1式角色被攻击天赋（夜战精英旧版，实现见 Type561Talent）
+        return Type561Talent.onDefenceProc(hero, enemy, dmg);
     }
 
 	public static int onAttackProc( Hero hero, Char enemy, int dmg ){
-		if(hero.hasTalent(SUCKER_PUNCH)
-				&& enemy instanceof Mob && ((Mob) enemy).surprisedBy(hero)
-				&& enemy.buff(SuckerPunchTracker.class) == null){
-			dmg += Random.IntRange(hero.pointsInTalent(SUCKER_PUNCH) , 2);
-			Buff.affect(enemy, SuckerPunchTracker.class);
-		}
+		// 盗贼（UMP9）攻击命中天赋（偷袭，实现见 RogueTalent）
+		dmg = RogueTalent.onAttackProc(hero, enemy, dmg);
 
-        if(hero.hasTalent(Type56One_Damage)){
-            ShootGun Gun = hero.belongings.getItem(ShootGun.class);
-            boolean add;
-            if (Gun == null && !(hero.belongings.weapon instanceof ShootGun))
-                //背包不存在榴弹且也没有装备榴弹的情况下
-                add = true;
-            else
-                add = ShootGun.cooldown;
-
-            if (add)
-                dmg += Random.IntRange(hero.pointsInTalent(Type56One_Damage)-1 , 2);
-        }
-
-		if(hero.hasTalent(FOLLOWUP_STRIKE)) {
-			if (hero.belongings.weapon() instanceof MissileWeapon) {
-				Buff.affect(enemy, FollowupStrikeTracker.class);
-			} else if (enemy.buff(FollowupStrikeTracker.class) != null){
-				dmg += 1 + hero.pointsInTalent(FOLLOWUP_STRIKE);
-				if (!(enemy instanceof Mob) || !((Mob) enemy).surprisedBy(hero)){
-					Sample.INSTANCE.play(Assets.Sounds.HIT_STRONG, 0.75f, 1.2f);
-				}
-				enemy.buff(FollowupStrikeTracker.class).detach();
-			}
-		}
+		// 女猎（隼）攻击命中天赋（连击，实现见 HuntressTalent）
+		dmg = HuntressTalent.onAttackProc(hero, enemy, dmg);
 
 		// GSH18角色攻击命中相关天赋（锁链冲击溅射/双星守护回盾，实现见 GSH18Talent；
 		// 天狼星心脏的附加伤害在 SiriusHeart.onAttack 中同样调用 GSH18Talent.chainShock）
 		GSH18Talent.onAttackProc(hero, enemy, dmg);
 
-        if(hero.hasTalent(HOW_DARE_YOU)){
-            float chance  =0.15f;
-            float duration=5.01f;
-
-            if(hero.pointsInTalent(HOW_DARE_YOU)>=2){
-                float enemyHealthRate = (float) enemy.HP / (float) enemy.HT;
-                chance = 0.1F * enemyHealthRate;
-                duration += 10F * enemyHealthRate;
-            }
-
-            if(Random.Float() < chance)
-                Buff.affect(enemy, Terror.class,duration);
-        }
-
-        if(hero.hasTalent(JIEFANGCI) && Dungeon.level.adjacent(hero.pos,enemy.pos)){
-            if (hero.belongings.weapon() instanceof ShootGun
-                    || hero.buff(JIEFANGCI_Tracker.class) == null) {
-                Buff.prolong(hero, JIEFANGCI_Tracker.class, 5F);
-                dmg += 1 + 4 * hero.pointsInTalent(JIEFANGCI);
-                float chance = 0.05F + 0.1F * hero.pointsInTalent(JIEFANGCI);
-                if (Random.Float() < chance)
-                    Buff.affect(enemy, Cripple.class, 2F);
-            }
-        }
-
-        if(hero.hasTalent(SEARCH_ARMY) && enemy instanceof Mob){
-            if(enemy.paralysed>0)
-                dmg = (int) (dmg * (1F + (0.4F / 3F) * hero.pointsInTalent(SEARCH_ARMY)));
-            else if(((Mob) enemy).surprisedBy(hero))
-                dmg = (int) (dmg * (1F + 0.1F * hero.pointsInTalent(SEARCH_ARMY)));
-        }
+		// 56-1式角色攻击命中天赋（轻装简从/胆敢向我还击/解放刺/侦查部队，实现见 Type561Talent）
+		dmg = Type561Talent.onAttackProc(hero, enemy, dmg);
 
         return dmg;
 	}

@@ -26,6 +26,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.RogueTalent;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 
@@ -78,8 +79,8 @@ public class RingOfEnergy extends Ring {
         if (!(target instanceof Hero))
             return bonus;
         Hero hero = (Hero) target;
-        if ( hero.hasTalent(Talent.LIGHT_CLOAK) && hero.heroClass != HeroClass.ROGUE)
-            bonus *= 1f + (0.2f * hero.pointsInTalent(Talent.LIGHT_CLOAK)/3f);
+        // 盗贼（UMP9）轻身披风（蜕变）：非盗贼持有时神器充能加速（实现见 RogueTalent）
+        bonus *= RogueTalent.lightCloakArtifactChargeMul(hero);
         if ( hero.hasTalent(Talent.Type56Three_Book) && hero.heroClass != HeroClass.TYPE561)
             bonus *= 1f + (0.2f * hero.pointsInTalent(Talent.LIGHT_CLOAK)/3f);
         return bonus;

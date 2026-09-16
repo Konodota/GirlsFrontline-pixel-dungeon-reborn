@@ -37,6 +37,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Sleep;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Terror;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.RogueTalent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ArmorAbility;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.NPC;
@@ -65,11 +66,11 @@ public class SmokeBomb extends ArmorAbility {
 
 	@Override
 	public float chargeUse(Hero hero) {
-		if (!hero.hasTalent(Talent.SHADOW_STEP) || hero.invisible <= 0){
+		if (hero.invisible <= 0){
 			return super.chargeUse(hero);
 		} else {
 			//reduced charge use by 20%/36%/50%/60%
-			return (float)(super.chargeUse(hero) * Math.pow(0.795, hero.pointsInTalent(Talent.SHADOW_STEP)));
+			return (float)(super.chargeUse(hero) * RogueTalent.shadowStepChargeFactor(hero));
 		}
 	}
 
@@ -90,7 +91,7 @@ public class SmokeBomb extends ArmorAbility {
 			armor.charge -= chargeUse(hero);
 			Item.updateQuickslot();
 
-			boolean shadowStepping = hero.invisible > 0 && hero.hasTalent(Talent.SHADOW_STEP);
+			boolean shadowStepping = RogueTalent.shadowStepping(hero);
 
 			if (!shadowStepping) {
 				for (Mob mob : Dungeon.level.mobs.toArray(new Mob[0])) {
@@ -101,7 +102,7 @@ public class SmokeBomb extends ArmorAbility {
 					}
 				}
 
-				if (hero.hasTalent(Talent.BODY_REPLACEMENT)) {
+				if (RogueTalent.hasBodyReplacement(hero)) {
 					for (Char ch : Actor.chars()){
 						if (ch instanceof NinjaLog){
 							ch.die(null);
@@ -113,11 +114,11 @@ public class SmokeBomb extends ArmorAbility {
 					GameScene.add(n);
 				}
 
-				if (hero.hasTalent(Talent.HASTY_RETREAT)){
+				float retreatDuration = RogueTalent.hastyRetreatDuration(hero);
+				if (retreatDuration > 0){
 					//effectively 1/2/3/4 turns
-					float duration = 0.67f + hero.pointsInTalent(Talent.HASTY_RETREAT);
-					Buff.affect(hero, Haste.class, duration);
-					Buff.affect(hero, Invisibility.class, duration);
+					Buff.affect(hero, Haste.class, retreatDuration);
+					Buff.affect(hero, Invisibility.class, retreatDuration);
 				}
 			}
 
@@ -156,13 +157,13 @@ public class SmokeBomb extends ArmorAbility {
 
 			alignment = Alignment.ALLY;
 
-			HP = HT = 20*Dungeon.hero.pointsInTalent(Talent.BODY_REPLACEMENT);
+			HP = HT = 20*RogueTalent.bodyReplacementPoints(Dungeon.hero);
 		}
 
 		@Override
 		public int drRoll() {
-			return Random.NormalIntRange(Dungeon.hero.pointsInTalent(Talent.BODY_REPLACEMENT),
-					3*Dungeon.hero.pointsInTalent(Talent.BODY_REPLACEMENT));
+			return Random.NormalIntRange(RogueTalent.bodyReplacementPoints(Dungeon.hero),
+					3*RogueTalent.bodyReplacementPoints(Dungeon.hero));
 		}
 
 		{

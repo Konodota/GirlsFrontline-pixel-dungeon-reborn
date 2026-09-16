@@ -38,6 +38,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.MageTalent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.mage.WildMagic;
 import com.shatteredpixel.shatteredpixeldungeon.effects.MagicMissile;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
@@ -73,9 +74,8 @@ public abstract class Wand extends Item {
 	public int maxCharges = initialCharges();
 	public int curCharges = maxCharges;
     public int minCharges(){
-        if (Dungeon.hero.pointsInTalent(Talent.ENERGIZING_UPGRADE) == 2)
-            return -2;
-        return 0;
+        // 法师（G11）充能升级+2充能下限（实现见 MageTalent）
+        return MageTalent.wandMinCharges(Dungeon.hero);
     }
 	public float partialCharge = 0f;
     public int chargeRem = 0;
@@ -134,7 +134,8 @@ public abstract class Wand extends Item {
 	public abstract void onHit(MagesStaff staff, Char attacker, Char defender, int damage);
 
     public static float procChanceMultiplier(Char attacker) {
-        return attacker.buff(Talent.EmpoweredStrikeTracker.class) != null ? 1.0F + (float)((Hero)attacker).pointsInTalent(Talent.EMPOWERED_STRIKE) / 2.0F : 1.0F;
+        // 法师（G11）战法·充能打击触发率乘数（实现见 MageTalent）
+        return MageTalent.empoweredStrikeMultiplier(attacker);
     }
 
 	public boolean tryToZap( Hero owner, int target ){
@@ -197,10 +198,8 @@ public abstract class Wand extends Item {
 
 	//TODO Consider externalizing char awareness buff
 	protected static void wandProc(Char target, int wandLevel, int chargesUsed){
-		if (Dungeon.hero.hasTalent(Talent.ARCANE_VISION)) {
-			int dur = 5 + 5*Dungeon.hero.pointsInTalent(Talent.ARCANE_VISION);
-			Buff.append(Dungeon.hero, TalismanOfForesight.CharAwareness.class, dur).charID = target.id();
-		}
+		// 法师（G11）秘法视野：命中目标赋予心灵感知（实现见 MageTalent）
+		MageTalent.onWandZapped(Dungeon.hero, target);
 
 		if (target != Dungeon.hero &&
 				Dungeon.hero.subClass == HeroSubClass.WARLOCK &&
@@ -347,16 +346,8 @@ public abstract class Wand extends Item {
             return level;
 
 		if (charger != null && charger.target != null) {
-			if (charger.target.buff(WildMagic.WildMagicTracker.class) != null){
-				int bonus = 2 + ((Hero)charger.target).pointsInTalent(Talent.WILD_POWER);
-				if (Random.Int(2) == 0) bonus++;
-				bonus /= 2; // +1/+1.5/+2/+2.5/+3 at 0/1/2/3/4 talent points
-
-				int maxBonusLevel = 2 + ((Hero)charger.target).pointsInTalent(Talent.WILD_POWER);
-				if (level < maxBonusLevel) {
-					level = Math.min(level + bonus, maxBonusLevel);
-				}
-			}
+			// 法师（G11）狂野魔法：技能持续期间法杖获得额外等级（实现见 MageTalent）
+			level = MageTalent.wildMagicBonusLevel((Hero)charger.target, level);
 
             ScrollEmpower scrollEmpower = charger.target.buff(ScrollEmpower.class);
             if (scrollEmpower != null){
@@ -393,7 +384,8 @@ public abstract class Wand extends Item {
         }
         //consumes 30% of current charges, rounded up, with a min of 1 and a max of 3.
         int cast = (int) GameMath.gate(1, (int)Math.ceil((curCharges-minCharges())*0.3f), 3);
-		if (Dungeon.hero.pointsInTalent(Talent.ENERGIZING_UPGRADE) != 2){
+		// 法师（G11）充能升级未满+2时，多耗充能可辅助鉴定（实现见 MageTalent）
+		if (MageTalent.wandOverchargeIdentify(Dungeon.hero)){
 			if (cast == 2)
 				guessLevel(2, "规模为消耗2点充能，当前要求至少4点充能上限，即+2。");
 			else if (cast == 3)
@@ -426,7 +418,7 @@ public abstract class Wand extends Item {
 			float uses = Math.min( availableUsesToID, Talent.itemIDSpeedFactor(Dungeon.hero, this) );
 			availableUsesToID -= uses;
 			usesLeftToID -= uses;
-			if (usesLeftToID <= 0 || Dungeon.hero.pointsInTalent(Talent.SCHOLARS_INTUITION) == 2) {
+			if (usesLeftToID <= 0 || MageTalent.instantIdentifyWand(Dungeon.hero)) {
 				identify();
 				GLog.p( Messages.get(Wand.class,"identify",toString()) );
 				Badges.validateItemLevelAquired( this );
@@ -449,36 +441,14 @@ public abstract class Wand extends Item {
 			}
 		}
 
-        if (Dungeon.hero.hasTalent(Talent.EMPOWERED_STRIKE) && this.charger != null && this.charger.target == Dungeon.hero && !Dungeon.hero.belongings.contains(this)) {
-            Buff.prolong(Dungeon.hero, Talent.EmpoweredStrikeTracker.class, 10.0F);
-            //使用老魔杖发射子弹之后，赋予一个buff以标注施法后的首次攻击
-        }
+        // 法师（G11）蓄能打击：法杖施法后挂追踪（实现见 MageTalent）
+        MageTalent.onWandZappedEmpoweredStrike(Dungeon.hero, this, this.charger != null && this.charger.target == Dungeon.hero);
         
 		//if the wand is owned by the hero, but not in their inventory, it must be in the staff
 
-        if (curUser.hasTalent(Talent.BACKUP_BARRIER)
-                && curCharges <= 0
-                && charger != null && charger.target == curUser){
-            boolean getShield = false;
-            //regular. If hero owns wand but it isn't in belongings it must be in the staff
-            if (curUser.heroClass == HeroClass.MAGE && !curUser.belongings.contains(this)){
-                //grants 3/5 shielding
-                getShield = true;
-            }
-            //metamorphed. Triggers if wand is highest level hero has
-            else if (curUser.heroClass != HeroClass.MAGE) {
-                getShield = true;
-                for (Item i : curUser.belongings.getAllItems(Wand.class)){
-                    if (i.level() > level()){
-                        getShield = false;
-                    }
-                }
-            }
-            if (getShield){
-                int shieldToGive = 1 + 2 * Dungeon.hero.pointsInTalent(Talent.BACKUP_BARRIER);
-                Buff.affect(Dungeon.hero, Barrier.class).setShield(shieldToGive);
-            }
-
+        // 法师（G11）备用法障：空充能施法获得护盾（实现见 MageTalent）
+        if (MageTalent.backupBarrierTriggers(curUser, this, curCharges, charger != null && charger.target == curUser)){
+            Buff.affect(Dungeon.hero, Barrier.class).setShield(MageTalent.backupBarrierShield(curUser));
         }
 
 		Invisibility.dispel();
@@ -632,9 +602,9 @@ public abstract class Wand extends Item {
 				int cell = shot.collisionPos;
 				
 				if (target == curUser.pos || cell == curUser.pos) {
-					if (target == curUser.pos && curUser.hasTalent(Talent.SHIELD_BATTERY)){
+					if (target == curUser.pos && MageTalent.hasShieldBattery(curUser)){
 						float shield = curUser.HT * (0.04f*(curWand.curCharges-curWand.minCharges()));
-						if (curUser.pointsInTalent(Talent.SHIELD_BATTERY) == 2) shield *= 1.5f;
+						shield *= MageTalent.shieldBatteryMultiplier(curUser);
 						Buff.affect(curUser, Barrier.class).setShield(Math.round(shield));
 						curWand.guessLevel(curWand.curCharges - curWand.initialCharges(), Messages.format("以大于+0的充能上限的充能数判断等级为 +%d 。" , curWand.curCharges - curWand.initialCharges()));
 						curWand.curCharges = curWand.minCharges();

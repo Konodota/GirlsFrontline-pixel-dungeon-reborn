@@ -32,6 +32,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.FlavourBuff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Terror;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.RogueTalent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ArmorAbility;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.ClassArmor;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
@@ -59,7 +60,7 @@ public class DeathMark extends ArmorAbility {
 		float chargeUse = super.chargeUse(hero);
 		if (hero.buff(DoubleMarkTracker.class) != null){
 			//reduced charge use by 30%/50%/65%/75%
-			chargeUse *= Math.pow(0.707, hero.pointsInTalent(Talent.DOUBLE_MARK));
+			chargeUse *= RogueTalent.doubleMarkChargeFactor(hero);
 		}
 		return chargeUse;
 	}
@@ -92,7 +93,7 @@ public class DeathMark extends ArmorAbility {
 
 		if (hero.buff(DoubleMarkTracker.class) != null){
 			hero.buff(DoubleMarkTracker.class).detach();
-		} else if (hero.hasTalent(Talent.DOUBLE_MARK)) {
+		} else if (RogueTalent.hasDoubleMark(hero)) {
 			Buff.affect(hero, DoubleMarkTracker.class, 0.01f);
 		}
 
@@ -103,20 +104,21 @@ public class DeathMark extends ArmorAbility {
 			return;
 		}
 
-		if (Dungeon.hero.hasTalent(Talent.FEAR_THE_REAPER)) {
-			if (Dungeon.hero.pointsInTalent(Talent.FEAR_THE_REAPER) >= 2) {
+		int reaperPoints = RogueTalent.fearTheReaperPoints(Dungeon.hero);
+		if (reaperPoints > 0) {
+			if (reaperPoints >= 2) {
 				Buff.prolong(ch, Terror.class, 5f).object = Dungeon.hero.id();
 			}
 			Buff.prolong(ch, Cripple.class, 5f);
 
-			if (Dungeon.hero.pointsInTalent(Talent.FEAR_THE_REAPER) >= 3) {
+			if (reaperPoints >= 3) {
 				boolean[] passable = BArray.not(Dungeon.level.solid, null);
 				PathFinder.buildDistanceMap(ch.pos, passable, 3);
 
 				for (Char near : Actor.chars()) {
 					if (near != ch && near.alignment == Char.Alignment.ENEMY
 							&& PathFinder.distance[near.pos] != Integer.MAX_VALUE) {
-						if (Dungeon.hero.pointsInTalent(Talent.FEAR_THE_REAPER) == 4) {
+						if (reaperPoints == 4) {
 							Buff.prolong(near, Terror.class, 5f).object = Dungeon.hero.id();
 						}
 						Buff.prolong(near, Cripple.class, 5f);
@@ -189,7 +191,7 @@ public class DeathMark extends ArmorAbility {
 				Sample.INSTANCE.play(Assets.Sounds.HIT_STAB);
 				Sample.INSTANCE.play(Assets.Sounds.HIT_STRONG);
 				target.die(this);
-				int shld = Math.round(initialHP * (0.125f*Dungeon.hero.pointsInTalent(Talent.DEATHLY_DURABILITY)));
+				int shld = RogueTalent.deathlyDurabilityShield(Dungeon.hero, initialHP);
 				if (shld > 0 && target.alignment != Char.Alignment.ALLY){
 					Buff.affect(Dungeon.hero, Barrier.class).setShield(shld);
 				}

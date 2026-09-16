@@ -43,6 +43,9 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.SoulMark;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Terror;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.MageTalent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.RogueTalent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.WarriorTalent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ArmorAbility;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.DirectableAlly;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
@@ -633,11 +636,12 @@ public abstract class Mob extends Char {
 			int restoration = Math.min(damage, HP+shielding());
 			
 			//physical damage that doesn't come from the hero is less effective
+			// 法师（G11）术士·噬魂衰减/转饥饿系数（实现见 MageTalent）
 			if (enemy != Dungeon.hero){
-				restoration = Math.round(restoration * 0.4f*Dungeon.hero.pointsInTalent(Talent.SOUL_SIPHON)/3f);
+				restoration = Math.round(restoration * MageTalent.soulSiphonFactor(Dungeon.hero));
 			}
 			if (restoration > 0) {
-				Buff.affect(Dungeon.hero, Hunger.class).affectHunger(restoration*Dungeon.hero.pointsInTalent(Talent.SOUL_EATER)/3f);
+				Buff.affect(Dungeon.hero, Hunger.class).affectHunger(restoration*MageTalent.soulEaterHungerFactor(Dungeon.hero));
 				Dungeon.hero.HP = (int) Math.ceil(Math.min(Dungeon.hero.HT, Dungeon.hero.HP + (restoration * 0.4f)));
 				Dungeon.hero.sprite.emitter().burst(Speck.factory(Speck.HEALING), 1);
 			}
@@ -741,10 +745,9 @@ public abstract class Mob extends Char {
 		if (alignment == Alignment.ENEMY){
 			rollToDropLoot();
 
-			if (cause == Dungeon.hero
-					&& Dungeon.hero.hasTalent(Talent.LETHAL_MOMENTUM)
-					&& Random.Float() < 0.34f + 0.33f* Dungeon.hero.pointsInTalent(Talent.LETHAL_MOMENTUM)){
-				Buff.affect(Dungeon.hero, Talent.LethalMomentumTracker.class, 1f);
+			// 战士（UMP45）致命势能：击杀后下次动作瞬发（实现见 WarriorTalent）
+			if (cause == Dungeon.hero){
+				WarriorTalent.onMobSlain(Dungeon.hero, cause, this);
 			}
 		}
 
@@ -758,7 +761,7 @@ public abstract class Mob extends Char {
 
 		if (!(this instanceof Wraith)
 				&& soulMarked
-				&& Random.Float() < (0.4f*Dungeon.hero.pointsInTalent(Talent.NECROMANCERS_MINIONS)/3f)) {
+				&& MageTalent.rollNecromancerWraith(Dungeon.hero)) {
 			Wraith w = Wraith.spawnAt(pos);
 			if (w != null) {
 				Buff.affect(w, Corruption.class);
@@ -822,19 +825,13 @@ public abstract class Mob extends Char {
 			Lucky.showFlare(sprite);
 		}
 
-		//soul eater talent
-		if (buff(SoulMark.class) != null &&
-				Random.Int(10) < Dungeon.hero.pointsInTalent(Talent.SOUL_EATER)){
+		//soul eater talent（法师G11术士·噬魂，实现见 MageTalent）
+		if (buff(SoulMark.class) != null && MageTalent.rollSoulEater(Dungeon.hero)){
 			Talent.onFoodEaten(Dungeon.hero, 0, null);
 		}
 
-		//bounty hunter talent
-		if (Dungeon.hero.buff(Talent.BountyHunterTracker.class) != null) {
-			Preparation prep = Dungeon.hero.buff(Preparation.class);
-			if (prep != null && Random.Float() < 0.25f * prep.attackLevel()) {
-				Dungeon.level.drop(new Gold(15 * Dungeon.hero.pointsInTalent(Talent.BOUNTY_HUNTER)), pos).sprite.drop();
-			}
-		}
+		//bounty hunter talent（盗贼UMP9赏金猎人，实现见 RogueTalent）
+		RogueTalent.rollBountyGold(Dungeon.hero, pos);
 
 	}
 	
@@ -945,10 +942,9 @@ public abstract class Mob extends Char {
 
 				float enemyStealth = enemy.stealth();
 
-				if (enemy instanceof Hero && ((Hero) enemy).hasTalent(Talent.SILENT_STEPS)){
-					if (Dungeon.level.distance(pos, enemy.pos) >= 4 - ((Hero) enemy).pointsInTalent(Talent.SILENT_STEPS)) {
-						enemyStealth = Float.POSITIVE_INFINITY;
-					}
+				// 盗贼（UMP9）无声步伐：距离足够远时无法察觉潜行英雄（实现见 RogueTalent）
+				if (enemy instanceof Hero && RogueTalent.silentStepsConceals((Hero) enemy, Dungeon.level.distance(pos, enemy.pos))) {
+					enemyStealth = Float.POSITIVE_INFINITY;
 				}
 
 				if (Random.Float( distance( enemy ) + enemyStealth ) < 1) {

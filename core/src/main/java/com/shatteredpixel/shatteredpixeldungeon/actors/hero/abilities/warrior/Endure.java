@@ -31,6 +31,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.FlavourBuff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Invisibility;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.WarriorTalent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ArmorAbility;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.ClassArmor;
@@ -93,7 +94,7 @@ public class Endure extends ArmorAbility {
 
 		public void setup(Hero hero){
 			enduring = true;
-			maxDmgTaken = (int) (hero.HT * Math.pow(0.67f, hero.pointsInTalent(Talent.SHRUG_IT_OFF)));
+			maxDmgTaken = (int) (hero.HT * WarriorTalent.shrugItOffDamageFactor(hero));
 			damageBonus = 0;
 			hitsLeft = 0;
 		}
@@ -122,7 +123,7 @@ public class Endure extends ArmorAbility {
 			}
 
 			enduring = false;
-			damageBonus *= 1f + 0.15f*Dungeon.hero.pointsInTalent(Talent.SUSTAINED_RETRIBUTION);
+			damageBonus *= WarriorTalent.sustainedRetributionDamageMultiplier(Dungeon.hero);
 
 			int nearby = 0;
 			for (Char ch : Actor.chars()){
@@ -130,9 +131,9 @@ public class Endure extends ArmorAbility {
 					nearby ++;
 				}
 			}
-			damageBonus *= 1f + (nearby*0.05f*Dungeon.hero.pointsInTalent(Talent.EVEN_THE_ODDS));
+			damageBonus *= WarriorTalent.evenTheOddsMultiplier(Dungeon.hero, nearby);
 
-			hitsLeft = 1+Dungeon.hero.pointsInTalent(Talent.SUSTAINED_RETRIBUTION);
+			hitsLeft = WarriorTalent.sustainedRetributionHits(Dungeon.hero);
 			damageBonus /= hitsLeft;
 
 			if (damageBonus > 0) {

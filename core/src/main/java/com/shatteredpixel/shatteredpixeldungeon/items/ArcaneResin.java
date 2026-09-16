@@ -28,6 +28,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.MageTalent;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.Bag;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.MagicalHolster;
@@ -176,12 +177,9 @@ public class ArcaneResin extends Item {
 
         @Override
         public void onComplete() {
-            if (Dungeon.hero != null &&
-                    Dungeon.hero.hasTalent(Talent.WAND_PRESERVATION) &&
-                    Dungeon.hero.heroClass == HeroClass.MAGE ){
-                Talent.WandPreservationCounter counter = Buff.affect(Dungeon.hero, Talent.WandPreservationCounter.class);
-                if (counter.count() < Dungeon.hero.pointsInTalent(Talent.WAND_PRESERVATION))
-                    counter.countUp(1);
+            if (Dungeon.hero != null && Dungeon.hero.heroClass == HeroClass.MAGE){
+                // 法师（G11）法杖保留：炼金完成消耗一次计数（实现见 MageTalent）
+                MageTalent.spendWandPreservation(Dungeon.hero);
             }
         }
 
@@ -190,17 +188,7 @@ public class ArcaneResin extends Item {
 			Wand w = (Wand)ingredients.get(0);
 			int level = w.level() - w.resinBonus;
             int quantity = 2 * (level + 1);
-            if (Dungeon.hero != null){
-                if (Dungeon.hero.hasTalent(Talent.WAND_PRESERVATION)){
-                    if (Dungeon.hero.heroClass != HeroClass.MAGE)
-                        quantity += Dungeon.hero.pointsInTalent(Talent.WAND_PRESERVATION);
-                    else{
-                        Talent.WandPreservationCounter counter = Buff.affect(Dungeon.hero, Talent.WandPreservationCounter.class);
-                        if (counter.count() < Dungeon.hero.pointsInTalent(Talent.WAND_PRESERVATION))
-                            quantity += 2;
-                    }
-                }
-            }
+            quantity += MageTalent.arcaneResinExtraQuantity(Dungeon.hero);
 			return new ArcaneResin().quantity(quantity);
 		}
 	}

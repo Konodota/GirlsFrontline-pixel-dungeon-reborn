@@ -28,6 +28,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.WarriorTalent;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor.Glyph;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
@@ -51,7 +52,8 @@ public class Viscosity extends Glyph {
 		int realDamage = damage - defender.drRoll();
 
 		//account for icon stomach (just skip the glyph)
-		if (defender.buff(Talent.WarriorFoodImmunity.class) != null){
+		// 战士（UMP45）铁胃免疫窗口内跳过粘性刻印（实现见 WarriorTalent）
+		if (defender instanceof Hero && WarriorTalent.hasFoodImmunity((Hero) defender)){
 			return damage;
 		}
 

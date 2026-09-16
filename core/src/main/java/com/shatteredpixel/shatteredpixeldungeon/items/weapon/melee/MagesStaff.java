@@ -30,6 +30,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.MageTalent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.ElmoParticle;
 import com.shatteredpixel.shatteredpixeldungeon.items.ArcaneResin;
@@ -161,23 +162,19 @@ public class MagesStaff extends MeleeWeapon {
 
         Talent.EmpoweredStrikeTracker empoweredStrike = attacker.buff(Talent.EmpoweredStrikeTracker.class);
         if (empoweredStrike != null){
-            //受战法三层专属天赋蓄能打击影响，老魔杖发射子弹后的首次攻击增加伤害
-            damage = Math.round( damage * (1f + Dungeon.hero.pointsInTalent(Talent.EMPOWERED_STRIKE)/6f));
+            // 法师（G11）蓄能打击：法杖首次近战增伤（实现见 MageTalent）
+            damage = MageTalent.empoweredStrikeStaffDamage(attacker, damage);
         }
 
-        if (wand.curCharges >= wand.maxCharges && attacker instanceof Hero && Random.Int(5) < ((Hero) attacker).pointsInTalent(Talent.EXCESS_CHARGE)){
-            //战法三层专属天赋盈能屏障效果
+        if (attacker instanceof Hero
+                && MageTalent.rollExcessCharge((Hero) attacker, wand.curCharges >= wand.maxCharges)){
+            // 法师（G11）盈能屏障：法杖满能时近战获得屏障（实现见 MageTalent）
             Buff.affect(attacker, Barrier.class).setShield(buffedLvl()*2);
         }
 
-        if (attacker instanceof Hero && ((Hero) attacker).hasTalent(Talent.MYSTICAL_CHARGE)){
-            //战法三层天赋充能秘术效果
-            Hero hero = (Hero) attacker;
-            for (Buff b : hero.buffs()){
-                if (b instanceof Artifact.ArtifactBuff) {
-                    if (!((Artifact.ArtifactBuff) b).isCursed()) ((Artifact.ArtifactBuff) b).charge(hero,0.5f*hero.pointsInTalent(Talent.MYSTICAL_CHARGE));
-                }
-            }
+        if (attacker instanceof Hero){
+            // 法师（G11）充能秘术：近战为神器充能（实现见 MageTalent）
+            MageTalent.mysticalChargeArtifacts((Hero) attacker);
         }
 
         if (wand != null &&
@@ -233,10 +230,9 @@ public class MagesStaff extends MeleeWeapon {
 
         int oldStaffcharges = this.wand.curCharges;
 
-        if (owner == Dungeon.hero && Dungeon.hero.hasTalent(Talent.WAND_PRESERVATION)){
-            Talent.WandPreservationCounter counter = Buff.affect(Dungeon.hero, Talent.WandPreservationCounter.class);
-            if (counter.count() < Dungeon.hero.pointsInTalent(Talent.WAND_PRESERVATION)){
-                counter.countUp(1);
+        if (owner == Dungeon.hero && MageTalent.hasWandPreservation(Dungeon.hero)){
+            // 法师（G11）法杖保留：消耗计数保留法杖，次数耗尽则补偿奥术树脂（实现见 MageTalent）
+            if (MageTalent.spendWandPreservation(Dungeon.hero)){
                 this.wand.level(0);
                 if (!this.wand.collect()) {
                     Dungeon.level.drop(this.wand, owner.pos);
@@ -462,11 +458,8 @@ public class MagesStaff extends MeleeWeapon {
                     if (overLoad == OverLoad.OVERLOADING)
                         newLevel ++;
                     String bodyText = Messages.get(MagesStaff.class, "imbue_desc", newLevel);
-                    int preservesLeft = Dungeon.hero.pointsInTalent(Talent.WAND_PRESERVATION);
-                    if (Dungeon.hero.buff(Talent.WandPreservationCounter.class) != null){
-                        preservesLeft -= (int) Dungeon.hero.buff(Talent.WandPreservationCounter.class).count();
-                    }
-                    if (Dungeon.hero.hasTalent(Talent.WAND_PRESERVATION)) {
+                    int preservesLeft = MageTalent.wandPreservesLeft(Dungeon.hero);
+                    if (MageTalent.hasWandPreservation(Dungeon.hero)) {
                         bodyText += "\n\n" + Messages.get(MagesStaff.class, "imbue_talent", 100, preservesLeft);
                     }
                     else {

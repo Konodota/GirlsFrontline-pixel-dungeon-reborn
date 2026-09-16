@@ -31,6 +31,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Invisibility;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.HuntressTalent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.ArmoredStatue;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.LeafParticle;
@@ -90,7 +91,7 @@ public class HighGrass {
 				//berries try to drop on floors 2/3/4/6/7/8, to a max of 4/6
 				Talent.NatureBerriesAvailable berries = ch.buff(Talent.NatureBerriesAvailable.class);
 				if (berries != null) {
-					int targetFloor = 2 + 2*((Hero)ch).pointsInTalent(Talent.NATURES_BOUNTY);
+					int targetFloor = 2 + HuntressTalent.naturesBountyFloorBonus((Hero) ch);
 					targetFloor -= berries.count();
 					targetFloor += (targetFloor >= 5) ? 3 : 2;
 

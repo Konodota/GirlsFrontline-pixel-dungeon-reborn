@@ -28,6 +28,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Invisibility;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.HuntressTalent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ArmorAbility;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.ClassArmor;
@@ -67,7 +68,7 @@ public class SpectralBlades extends ArmorAbility {
 		Ballistica b = new Ballistica(hero.pos, target, Ballistica.WONT_STOP);
 		final HashSet<Char> targets = new HashSet<>();
 
-		Char enemy = findChar(b, hero, 2*hero.pointsInTalent(Talent.PROJECTING_BLADES), targets);
+		Char enemy = findChar(b, hero, HuntressTalent.projectingBladesRange(hero), targets);
 
 		if (enemy == null){
 			GLog.w(Messages.get(this, "no_target"));
@@ -76,15 +77,15 @@ public class SpectralBlades extends ArmorAbility {
 
 		targets.add(enemy);
 
-		if (hero.hasTalent(Talent.FAN_OF_BLADES)){
-			ConeAOE cone = new ConeAOE(b, 30*hero.pointsInTalent(Talent.FAN_OF_BLADES));
+		if (HuntressTalent.hasFanOfBlades(hero)){
+			ConeAOE cone = new ConeAOE(b, HuntressTalent.fanOfBladesConeDegrees(hero));
 			for (Ballistica ray : cone.rays){
-				Char toAdd = findChar(ray, hero, 2*hero.pointsInTalent(Talent.PROJECTING_BLADES), targets);
+				Char toAdd = findChar(ray, hero, HuntressTalent.projectingBladesRange(hero), targets);
 				if (toAdd != null && hero.fieldOfView[toAdd.pos]){
 					targets.add(toAdd);
 				}
 			}
-			while (targets.size() > 1 + hero.pointsInTalent(Talent.FAN_OF_BLADES)){
+			while (targets.size() > 1 + HuntressTalent.fanOfBladesMaxExtraTargets(hero)){
 				Char furthest = null;
 				for (Char ch : targets){
 					if (furthest == null){
@@ -110,10 +111,9 @@ public class SpectralBlades extends ArmorAbility {
 				@Override
 				public void call() {
 					float dmgMulti = ch == enemy ? 1f : 0.5f;
-					float accmulti = 1f + 0.25f*hero.pointsInTalent(Talent.PROJECTING_BLADES);
-					if (hero.hasTalent(Talent.SPIRIT_BLADES)){
-						Buff.affect(hero, Talent.SpiritBladesTracker.class, 0f);
-					}
+					float accmulti = 1f + HuntressTalent.projectingBladesAccuracyBonus(hero);
+					// 女猎（隼）灵魂之刃：命中时挂追踪（实现见 HuntressTalent，内含天赋判定）
+					HuntressTalent.spiritBladesTrackerOn(hero);
 					hero.attack( ch, dmgMulti, 0, accmulti );
 					callbacks.remove( this );
 					if (callbacks.isEmpty()) {

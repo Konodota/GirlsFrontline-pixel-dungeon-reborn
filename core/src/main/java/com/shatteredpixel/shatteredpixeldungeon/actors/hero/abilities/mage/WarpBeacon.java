@@ -30,6 +30,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Invisibility;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.LockedFloor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.MageTalent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ArmorAbility;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.effects.MagicMissile;
@@ -64,7 +65,7 @@ public class WarpBeacon extends ArmorAbility {
 	@Override
 	public String targetingPrompt() {
 		if (Dungeon.hero.buff(WarpBeaconTracker.class) == null
-				&& Dungeon.hero.hasTalent(Talent.REMOTE_BEACON)){
+				&& MageTalent.hasRemoteBeacon(Dungeon.hero)){
 			return Messages.get(this, "prompt");
 		}
 		return super.targetingPrompt();
@@ -100,7 +101,7 @@ public class WarpBeacon extends ArmorAbility {
 				protected void onSelect(int index) {
 					if (index == 0){
 
-						if (tracker.LevelId != Dungeon.levelId && !hero.hasTalent(Talent.LONGRANGE_WARP)){
+						if (tracker.LevelId != Dungeon.levelId && !MageTalent.hasLongrangeWarp(hero)){
 							GLog.w( Messages.get(WarpBeacon.class, "depths") );
 							return;
 						}
@@ -108,7 +109,7 @@ public class WarpBeacon extends ArmorAbility {
 						float chargeNeeded = chargeUse(hero);
 
 						if (tracker.LevelId != Dungeon.levelId){
-							chargeNeeded *= 1.833f - 0.333f*Dungeon.hero.pointsInTalent(Talent.LONGRANGE_WARP);
+							chargeNeeded *= MageTalent.longrangeWarpChargeMultiplier(hero);
 						}
 
 						if (armor.charge < chargeNeeded){
@@ -125,12 +126,12 @@ public class WarpBeacon extends ArmorAbility {
 							ScrollOfTeleportation.appear(hero, tracker.pos);
 
 							if (existing != null && existing != hero){
-								if (hero.hasTalent(Talent.TELEFRAG)){
+								if (MageTalent.hasTelefrag(hero)){
 									int heroHP = hero.HP + hero.shielding();
-									int heroDmg = 5 * hero.pointsInTalent(Talent.TELEFRAG);
+									int heroDmg = MageTalent.telefragSelfDamage(hero);
 									hero.damage(Math.min(heroDmg, heroHP-1), WarpBeacon.this);
 
-									int damage = Random.NormalIntRange(10*hero.pointsInTalent(Talent.TELEFRAG), 15*hero.pointsInTalent(Talent.TELEFRAG));
+									int damage = Random.NormalIntRange(MageTalent.telefragDamage(hero), MageTalent.telefragDamage(hero) + MageTalent.telefragDamage(hero)/2);
 									existing.sprite.flash();
 									existing.sprite.bloodBurstA(existing.sprite.center(), damage);
 									existing.damage(damage, WarpBeacon.this);
@@ -196,7 +197,7 @@ public class WarpBeacon extends ArmorAbility {
 				return;
 			}
 
-			if (Dungeon.level.distance(hero.pos, target) > 4*hero.pointsInTalent(Talent.REMOTE_BEACON)){
+			if (Dungeon.level.distance(hero.pos, target) > MageTalent.remoteBeaconRange(hero)){
 				GLog.w( Messages.get(WarpBeacon.class, "too_far") );
 				return;
 			}
