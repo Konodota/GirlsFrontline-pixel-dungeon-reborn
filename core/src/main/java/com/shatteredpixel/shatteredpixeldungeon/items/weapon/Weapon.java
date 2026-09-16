@@ -283,7 +283,7 @@ abstract public class Weapon extends KindOfWeapon {
 			return CardCalculator.cardDelayFactor((Hero) owner, delay, this);
 		return delay;
 	}
-	private float delayFuror( Char owner ){
+	public float delayFuror( Char owner ){
 		float baseDelay = baseDelay(owner) * (1f/speedMultiplier(owner));
 		if(baseDelay<2F)
 			//攻速小于2回合，返回常态值，无论是基础攻速还是受一次狂怒增益后的攻速

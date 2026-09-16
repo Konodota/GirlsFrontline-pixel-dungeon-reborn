@@ -4,6 +4,7 @@ import static com.shatteredpixel.shatteredpixeldungeon.items.DandelionOwner.Card
 import static com.shatteredpixel.shatteredpixeldungeon.items.DandelionOwner.Card.hero;
 import static com.shatteredpixel.shatteredpixeldungeon.items.DandelionOwner.Card.addAll;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.DandelionOwner.AttackDMG_Add;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.utils.Color;
 import com.watabou.utils.Random;
@@ -76,12 +77,25 @@ public interface RareCard extends Card {
         public String extra(){
             switch (this){
                 case Type_64_Auto:
-                    if (Card.shield(hero()) <= 0)
+                    if (Card.shield(hero()) <= hero().HP)
                         break;
                 case AA_12:
                     return normalChance();
                 case DESERT_EAGLE:
                     return EnumString(this, extraKey, CardCalculator.shieldAttack(hero(), 1F));
+            }
+            return null;
+        }
+        @Override
+        public String extra_2(){
+            switch (this){
+                //通道1：64式自仅在护盾大于血量时生效，按当前倍率独立显示
+                case Type_64_Auto:
+                    if (Card.shield(hero()) <= hero().HP)
+                        break;
+                //通道1：AA-12常驻，按当前掉血倍率独立显示
+                case AA_12:
+                    return capTextSingle(CardCalculator.dmgMaxCap(chance(hero())));
             }
             return null;
         }
@@ -140,6 +154,13 @@ public interface RareCard extends Card {
             return null;
         }
         @Override
+        public String extra_2(){
+            //通道3：暴击额外伤害聚合组，合并显示当前总上限
+            if (this == Px4)
+                return capTextMerge(Math.round(CardCalculator.M4A1max(2 * CardCalculator.critFactor())));
+            return null;
+        }
+        @Override
         public void onSelect(){
             if (this == MOSIN_NAGANT)
                 CardPoint.critChance.pointUp(CardAffect.kiloTimes(
@@ -165,6 +186,20 @@ public interface RareCard extends Card {
                 CardAffect.getCore(hero(), new Cores.NormalCore().quantity(4));
             else if (this == COLT_SAA || this == STECHKIN)
                 CardAffect.getCore(hero(), new Cores.NormalCore().quantity(2));
+        }
+        @Override
+        public String extra_2(){
+            //通道5：C-93需施展【军团】技能挂上增伤buff后才显示
+            if (this == C_93 && hero().buff(AttackDMG_Add.C93.class) != null)
+                return capTextSingle(Math.round(CardCalculator.M4A1max(1F)));
+            return null;
+        }
+        @Override
+        public String extra_3(){
+            //攻速合并组：CZ75使总攻速倍率减半，合并值实时反映
+            if (this == CZ75)
+                return delayCapText();
+            return null;
         }
         @Override
         public String title(){

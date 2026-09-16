@@ -14,6 +14,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.NPC;
 import com.shatteredpixel.shatteredpixeldungeon.items.KindOfWeapon;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.M4A1;
 import com.watabou.utils.GameMath;
 import com.watabou.utils.PathFinder;
@@ -87,7 +88,11 @@ public class CardCalculator {
         if (isM4A1)
             return damage * chance;
         else
-            return Math.min(damage * chance, M4A1max(Math.max((chance >= 1 ? 2 : 3) * chance, 1)));
+            return Math.min(damage * chance, dmgMaxCap(chance));
+    }
+    //百分比增伤在非M4A1上的上限（M4A1max 伤害点数），供文案显示复用
+    public static int dmgMaxCap( float chance ){
+        return Math.round(M4A1max(Math.max(2 * chance, 1)));
     }
     public static float everDamageFactor_Add( boolean checkNagant ){
         float mul = 0;
@@ -116,8 +121,20 @@ public class CardCalculator {
         return mul;
     }
     public static float cardDelayFactor( Hero hero, float delay, KindOfWeapon wep ){
-        float multiplier = 0;
         boolean isM4A1 = wep instanceof M4A1;
+        //MG5在M4A1上直接锁定最终间隔，不参与倍率聚合
+        if (isM4A1 && hasCard(FinalCard.UNIVERSAL.MG5))
+            return 0.3333F;
+        float multiplier = delayMultiplier(hero, isM4A1);
+        if (!isM4A1)
+            multiplier *= AttackDelay_Add.otherChance(delay);
+
+        delay /= multiplier + 1;
+        return delay;
+    }
+    //攻速倍率聚合：永久组 + 强化期间希普卡 + 在场攻速buff，CZ75减半、非M4A1上MG5翻3倍
+    public static float delayMultiplier( Hero hero, boolean isM4A1 ){
+        float multiplier = 0;
         multiplier += everDelayFactor_Add(true);
         if (hero.buff(IntensifySkill.Intensify.class) != null
                 && hasCard(CommonCard.UNIVERSAL.Shipka))
@@ -126,16 +143,19 @@ public class CardCalculator {
             multiplier += a.percent();
         if (hasCard(RareCard.General_Liu.CZ75))
             multiplier /= 2;
-        if (hasCard(FinalCard.UNIVERSAL.MG5)) {
-            if (isM4A1)
-                return 0.3333F;
+        if (!isM4A1 && hasCard(FinalCard.UNIVERSAL.MG5))
             multiplier *= 3;
-        }
-        if (!isM4A1)
-            multiplier *= AttackDelay_Add.otherChance(delay);
-
-        delay /= multiplier + 1;
-        return delay;
+        return multiplier;
+    }
+    //非M4A1武器上当前实际生效的合并攻速百分比；手持M4A1/空手（或非Weapon）时返回-1（不显示）
+    public static int delayBonusShown( Hero hero ){
+        KindOfWeapon wep = hero.belongings.weapon;
+        if (!(wep instanceof Weapon) || wep instanceof M4A1)
+            return -1;
+        float baseDelay = ((Weapon) wep).delayFuror(hero);
+        float effective = delayMultiplier(hero, false)
+                * AttackDelay_Add.otherChance(baseDelay);
+        return Math.round(effective * 100);
     }
     public static float onM4A1damageRoll( Hero hero, float damage ){
         //外部因素产生的固定伤害就不加给M4A1了。
@@ -339,39 +359,26 @@ public class CardCalculator {
         return rate;
     }
     public static int critDamage( float baseDmg, boolean isM4A1 ){
-        float add = baseDmg * critFactor() - baseDmg;
-        boolean R93 = Card.CardPoint.R93_HitPoint.point() >= 5;
+        float critFactor = critFactor();
         if (hasCard(RareCard.WA2000.R93)) {
-            if (R93) {
+            if (Card.CardPoint.R93_HitPoint.point() >= 5) {
                 Card.CardPoint.R93_HitPoint.pointClear();
-                add *= 2F;
+                critFactor *= 2F;
             }
         }
         if (isM4A1)
-            return Math.round(baseDmg + add);
+            return Math.round(baseDmg + baseDmg * critFactor);
 
-        return Math.round(baseDmg + Math.min(add, M4A1max(critMaxFactor(R93))));
+        return Math.round(baseDmg + Math.min(baseDmg * critFactor, M4A1max(critFactor * 2)));
     }
     public static float critFactor(){
-        float chance = 1.5F;
+        float chance = 0.5F;
         if (hasCard(CommonCard.UNIVERSAL.Mk12))
             chance += 0.4F;
         if (hasCard(RareCard.WA2000.Px4))
             chance += 1F;
         if (Dungeon.hero.buff(IntensifySkill.Intensify.class) != null && hasCard(CommonCard.UNIVERSAL.C96))
             chance += 1.5F;
-        return chance;
-    }
-    public static float critMaxFactor(boolean R93){
-        float chance = 2F;
-        if (hasCard(CommonCard.UNIVERSAL.Mk12))
-            chance += 1F;
-        if (hasCard(RareCard.WA2000.Px4))
-            chance += 2F;
-        if (Dungeon.hero.buff(IntensifySkill.Intensify.class) != null && hasCard(CommonCard.UNIVERSAL.C96))
-            chance += 2F;
-        if (R93)
-            chance *= 2F;
         return chance;
     }
     private static boolean hasCard(Card card){

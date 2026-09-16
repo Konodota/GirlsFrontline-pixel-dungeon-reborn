@@ -79,6 +79,12 @@ public interface Card {
         String extra = extra();
         if (extra != null)
             desc += "\n\n" + extra;
+        extra = extra_2();
+        if (extra != null)
+            desc += "\n" + extra;
+        extra = extra_3();
+        if (extra != null)
+            desc += "\n" + extra;
         return desc;
     }
     default void onSelect(){ }
@@ -87,6 +93,29 @@ public interface Card {
     }
     default String extra(){
         return null;
+    }
+    //增伤上限追加行：非"M4A1"武器触发时，最多提供的伤害点数
+    default String extra_2(){
+        return null;
+    }
+    //攻速加成追加行：非"M4A1"武器触发时，当前实际生效的合并攻速
+    default String extra_3(){
+        return null;
+    }
+    //独立生效（通道1、5）：本卡单独享有一个上限
+    default String capTextSingle( int cap ){
+        return Messages.get(Card.class, "extra_cap_damage_single", cap);
+    }
+    //合并生效（通道2、3、4）：同类增益相加后共用一个上限
+    default String capTextMerge( int cap ){
+        return Messages.get(Card.class, "extra_cap_damage_merge", cap);
+    }
+    //攻速合并行：手持非M4A1武器时返回当前实际生效的合并攻速百分比；手持M4A1/空手时返回null
+    default String delayCapText(){
+        int percent = CardCalculator.delayBonusShown(hero());
+        if (percent < 0)
+            return null;
+        return Messages.get(Card.class, "extra_cap_delay", percent);
     }
     static Hero hero(){
         return Dungeon.hero;
@@ -151,8 +180,11 @@ public interface Card {
     default String crit(){
         return EnumString(this, extraKey, Math.round(CardCalculator.crit() * 100));
     }
+    default String normalChance( float mul ){
+        return EnumString(this, extraKey, Math.round(chance() * mul));
+    }
     default String normalChance(){
-        return EnumString(this, extraKey, Math.round(chance() * 100));
+        return normalChance(100);
     }
     static int shield( Hero hero ){
         int shield = 0;

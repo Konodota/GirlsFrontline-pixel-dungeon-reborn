@@ -1,7 +1,10 @@
 package com.shatteredpixel.shatteredpixeldungeon.items.DandelionOwner;
 
 import static com.shatteredpixel.shatteredpixeldungeon.items.DandelionOwner.Card.addAll;
+import static com.shatteredpixel.shatteredpixeldungeon.items.DandelionOwner.Card.hero;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.DandelionOwner.AttackDMG_Add;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.DandelionOwner.AttackDelay_Add;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.utils.Color;
 import com.watabou.utils.Random;
@@ -78,6 +81,13 @@ public interface CommonCard extends Card {
             return null;
         }
         @Override
+        public String extra_2(){
+            //通道1：司登按当前血量对应的自身倍率独立显示；负面收益时不显示
+            if (this == Sten_II && chance() > 0)
+                return capTextSingle(CardCalculator.dmgMaxCap(chance()));
+            return null;
+        }
+        @Override
         public float chance( Hero hero) {
             switch (this) {
                 case Sten_II:
@@ -117,7 +127,17 @@ public interface CommonCard extends Card {
         @Override
         public String extra(){
             if (this == PM1910)
-                return normalChance();
+                return normalChance(1);
+            return null;
+        }
+        @Override
+        public String extra_2(){
+            //通道4：骇入倍率增伤合并上限
+            switch (this){
+                case EM_2:
+                case SAR_21:
+                    return capTextMerge(CardCalculator.dmgMaxCap(CardCalculator.VHS_Hack_Factor()));
+            }
             return null;
         }
         @Override
@@ -144,12 +164,33 @@ public interface CommonCard extends Card {
         public String title(){
             return FirstCard.WA2000.cardName() + " " + CommonCard.super.title();
         }
+        @Override
+        public String extra_2(){
+            //通道5：SV-98需投掷暴击触发增伤buff后才显示
+            if (this == SV_98 && hero().buff(AttackDMG_Add.SV_98.class) != null)
+                return capTextSingle(Math.round(CardCalculator.M4A1max(3F)));
+            return null;
+        }
     }
     enum General_Liu implements CommonCard{
         Type_80, Rex_Zero_1, DEFENDER, JERICHO, RIBEYROLLES, MONDRAGON, TaBuKe, MOS;
         @Override
         public String title(){
             return FirstCard.General_Liu.cardName() + " " + CommonCard.super.title();
+        }
+        @Override
+        public String extra_2(){
+            //通道5：防卫者需增援退场触发增伤buff后才显示
+            if (this == DEFENDER && hero().buff(AttackDMG_Add.DEFENDER.class) != null)
+                return capTextSingle(Math.round(CardCalculator.M4A1max(3F)));
+            return null;
+        }
+        @Override
+        public String extra_3(){
+            //攻速合并组：塔布克需增援退场触发攻速buff后才显示
+            if (this == TaBuKe && hero().buff(AttackDelay_Add.TaBuKe.class) != null)
+                return delayCapText();
+            return null;
         }
     }
     enum UNIVERSAL implements CommonCard{
@@ -195,6 +236,56 @@ public interface CommonCard extends Card {
                         return failText();
             }
 
+            return null;
+        }
+        @Override
+        public String extra_2(){
+            switch (this){
+                //通道2：永久增伤聚合组，合并显示当前总上限
+                case _9A91:
+                case Super_SASS:
+                    return capTextMerge(CardCalculator.dmgMaxCap(CardCalculator.everDamageFactor_Add(true)));
+                //纳甘伤害奖励前置条件：自身没有任何攻速类永久增益
+                case Nagant_M1895:
+                    return capTextMerge(CardCalculator.dmgMaxCap(CardCalculator.everDamageFactor_Add(true)));
+                //M1014触发失效后才加入聚合组
+                case M1014:
+                    if (CardSelector.INSTANCE().failureCards.contains(this))
+                        return capTextMerge(CardCalculator.dmgMaxCap(CardCalculator.everDamageFactor_Add(true)));
+                    return null;
+                case AEK_999:
+                    return capTextSingle(CardCalculator.dmgMaxCap(chance()));
+                case K31:
+                    if (hero().buff(IntensifySkill.Intensify.class) != null)
+                        return capTextSingle(CardCalculator.dmgMaxCap(1F));
+                    return null;
+                //通道3：Mk12为永久暴击伤害增益
+                case Mk12:
+                    return capTextMerge(Math.round(CardCalculator.M4A1max(2 * CardCalculator.critFactor())));
+                //通道3：C96仅强化技能生效期间提供暴击伤害增益
+                case C96:
+                    if (hero().buff(IntensifySkill.Intensify.class) != null)
+                        return capTextMerge(Math.round(CardCalculator.M4A1max(2 * CardCalculator.critFactor())));
+                    return null;
+            }
+            return null;
+        }
+        @Override
+        public String extra_3(){
+            switch (this){
+                //攻速合并组：PK、FX-05为永久攻速增益
+                case PK:
+                case FX_05:
+                    return delayCapText();
+                //希普卡仅强化技能生效期间提供攻速增益
+                case Shipka:
+                    if (hero().buff(IntensifySkill.Intensify.class) != null)
+                        return delayCapText();
+                    return null;
+                //纳甘攻速奖励前置条件：自身没有任何伤害类永久增益
+                case Nagant_M1895:
+                    return delayCapText();
+            }
             return null;
         }
         @Override

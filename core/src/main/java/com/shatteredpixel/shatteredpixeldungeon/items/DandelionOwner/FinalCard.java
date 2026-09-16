@@ -147,5 +147,12 @@ public interface FinalCard extends Card {
         public String title(){
             return "Universal " + FinalCard.super.title();
         }
+        @Override
+        public String extra_3(){
+            //攻速合并组：MG5在非M4A1武器上使总攻速倍率翻3倍，合并值实时反映
+            if (this == MG5)
+                return delayCapText();
+            return null;
+        }
     }
 }

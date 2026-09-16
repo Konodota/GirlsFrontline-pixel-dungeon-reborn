@@ -64,6 +64,20 @@ public enum FirstCard implements Card {
         return null;
     }
     @Override
+    public String extra_2(){
+        if (!hasCard(this))
+            return null;
+        switch (this) {
+            //通道4：骇入倍率增伤合并上限
+            case VHS:
+                return capTextMerge(CardCalculator.dmgMaxCap(CardCalculator.VHS_Hack_Factor()));
+            //通道3：暴击额外伤害合并上限
+            case WA2000:
+                return capTextMerge(Math.round(CardCalculator.M4A1max(2 * CardCalculator.critFactor())));
+        }
+        return null;
+    }
+    @Override
     public Class<? extends Card> getCardClass(){
         return FirstCard.class;
     }
