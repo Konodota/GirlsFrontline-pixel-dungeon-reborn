@@ -116,6 +116,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.HornOfPlenty;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.LloydsBeacon;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.MasterThievesArmband;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.RedBook;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.RedBookOld;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TalismanOfForesight;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TimekeepersHourglass;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.MagicalHolster;
@@ -148,6 +149,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfLivingEarth;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.SpiritBow;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Gun561Old;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.DMR.AK47;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.ShootGun;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
@@ -215,6 +217,8 @@ public class Hero extends Char {
 	public HeroClass heroClass = HeroClass.ROGUE;
 	public HeroSubClass subClass = HeroSubClass.NONE;
 	public ArmorAbility armorAbility = null;
+	//TYPE561 隐藏旧版机制标志：仅旧版561式新开局时为 true，随存档保存，用于存档界面显示名区分
+	public boolean type561Old = false;
 	public ArrayList<LinkedHashMap<Talent, Integer>> talents = new ArrayList<>();
 	public LinkedHashMap<Talent, Talent> metamorphedTalents = new LinkedHashMap<>();
     public LinkedHashMap<Talent, Integer> addTalents = new LinkedHashMap<>();
@@ -324,6 +328,7 @@ public class Hero extends Char {
 	private static final String CLASS       = "class";
 	private static final String SUBCLASS    = "subClass";
 	private static final String ABILITY     = "armorAbility";
+	private static final String TYPE561_OLD = "type561_old";
 
 	private static final String ATTACK		= "attackSkill";
 	private static final String DEFENSE		= "defenseSkill";
@@ -341,6 +346,7 @@ public class Hero extends Char {
 		bundle.put( CLASS, heroClass );
 		bundle.put( SUBCLASS, subClass );
 		bundle.put( ABILITY, armorAbility );
+		bundle.put( TYPE561_OLD, type561Old );
 		Talent.storeTalentsInBundle( bundle, this );
 		
 		bundle.put( ATTACK, attackSkill );
@@ -375,6 +381,7 @@ public class Hero extends Char {
 		heroClass = bundle.getEnum( CLASS, HeroClass.class, HeroClass.rename );
 		subClass = bundle.getEnum( SUBCLASS, HeroSubClass.class, HeroSubClass.rename );
 		armorAbility = (ArmorAbility)bundle.get( ABILITY );
+		type561Old = bundle.getBoolean( TYPE561_OLD );
 		Talent.restoreTalentsFromBundle( bundle, this, Rankings.restoreInRanking );
 		
 		attackSkill = bundle.getInt( ATTACK );
@@ -382,6 +389,12 @@ public class Hero extends Char {
 		
 		STR = bundle.getInt( STRENGTH );
 		belongings.restoreFromBundle( bundle );
+
+		//兼容旧版561标志字段加入前已存在的存档：按旧版专属武器/袖珍本补识别
+		if (!bundle.contains( TYPE561_OLD ) && heroClass == HeroClass.TYPE561){
+			type561Old = belongings.weapon instanceof Gun561Old
+					|| belongings.artifact instanceof RedBookOld;
+		}
 
 		restoreUpdateByVersion(bundle);
 	}
@@ -419,6 +432,7 @@ public class Hero extends Char {
         info.hunger = bundle.getInt(HUNGER);
 		info.heroClass = bundle.getEnum( CLASS, HeroClass.class, HeroClass.rename );
 		info.subClass = bundle.getEnum( SUBCLASS, HeroSubClass.class );
+		info.type561Old = bundle.getBoolean( TYPE561_OLD );
 		Belongings.preview( info, bundle );
 	}
 
@@ -506,8 +520,13 @@ public class Hero extends Char {
 	public String className() {
         if (subClass != null && subClass != HeroSubClass.NONE && subClass != HeroSubClass.EMPTY)
             return subClass.title();
-        if (heroClass != null && heroClass != HeroClass.NONE)
+        if (heroClass != null && heroClass != HeroClass.NONE){
+        	//旧版561式未转职时游戏内名称显示为“老练的561式”（以本存档标志为准）
+        	if (type561Old && heroClass == HeroClass.TYPE561){
+        		return Messages.get(HeroClass.class, "type561_old");
+	        }
 		    return heroClass.title();
+        }
         return "404 NOT FOUND";
 	}
 

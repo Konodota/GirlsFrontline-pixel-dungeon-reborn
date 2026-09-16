@@ -460,7 +460,7 @@ public class TitleScene extends PixelScene {
 					name.text( Info.heroClass.title() );
 				} else {
 					//EMPTY 为无子类职业（如丹德莱）的占位，其名称未定义，须回退显示职业名
-					name.text( Info.subClass != HeroSubClass.NONE && Info.subClass != HeroSubClass.EMPTY ? Info.subClass.title() :Info.heroClass.title() );
+					name.text( Info.subClass != HeroSubClass.NONE && Info.subClass != HeroSubClass.EMPTY ? Info.subClass.title() :Info.classTitle() );
 				}
 
 

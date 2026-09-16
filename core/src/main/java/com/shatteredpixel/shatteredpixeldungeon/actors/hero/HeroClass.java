@@ -351,6 +351,7 @@ public enum HeroClass {
 	private static void initType561( Hero hero ) {
 		if (SPDSettings.type561OldMode()){
 			//旧版56-1式角色机制（隐藏功能，能力介绍页切换，仅影响新开局）
+			hero.type561Old = true;
 			Gun561Old gun561 = new Gun561Old();
 			(hero.belongings.weapon=gun561).identify();
 			hero.belongings.weapon.activate(hero);
@@ -368,6 +369,7 @@ public enum HeroClass {
 			return;
 		}
         Hunger.minLevel = -150;
+		hero.type561Old = false;
 		Gun561 gun561 = new Gun561();
 		(hero.belongings.weapon = gun561).identify();
 		hero.belongings.weapon.activate(hero);
@@ -416,6 +418,22 @@ public enum HeroClass {
 	}
 	public String title() {
 		return Messages.get(HeroClass.class, name());
+	}
+
+	//选择/介绍界面使用的职业名：游戏内优先按当前存档的旧版标志，开局前选择界面按全局旧版开关；
+	//命中旧版561时显示“老练的561式”
+	public String selectTitle() {
+		Hero hero = Dungeon.hero;
+		boolean old;
+		if (hero != null && hero.heroClass == this){
+			old = hero.type561Old;
+		} else {
+			old = this == TYPE561 && SPDSettings.type561OldMode();
+		}
+		if (old){
+			return Messages.get(HeroClass.class, "type561_old");
+		}
+		return title();
 	}
 
 	public String desc(){

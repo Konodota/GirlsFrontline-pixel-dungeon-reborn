@@ -48,6 +48,7 @@ import com.watabou.noosa.Visual;
 import com.watabou.noosa.ui.Component;
 import com.watabou.noosa.ui.Cursor;
 import com.watabou.utils.Callback;
+import com.watabou.utils.DeviceCompat;
 import com.watabou.utils.GameMath;
 import com.watabou.utils.PointF;
 import com.watabou.utils.Reflection;
@@ -139,6 +140,11 @@ public class PixelScene extends Scene {
 
 			if (SPDSettings.interfaceSize() > 0 && autoZoom < (maxDefaultZoom+1)/2){
 				autoZoom = (maxDefaultZoom+1)/2;
+			}
+			//手机端默认显示比例上限为 8X（原自动档位按密度常算出 9X）；
+			//仅作用于未手动调过比例时的自动默认值，桌面端及玩家已保存的设置不受影响
+			if (!DeviceCompat.isDesktop() && autoZoom > 8){
+				autoZoom = 8;
 			}
 			cameraZoom = autoZoom;
 		}

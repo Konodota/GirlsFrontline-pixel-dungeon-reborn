@@ -224,7 +224,7 @@ public class WndSelectGameInProgress extends Window {
 				name.text( Info.heroClass.title() );
 			} else {
 				//EMPTY 为丹德莱等无子类职业的占位，其名称未定义，须回退显示职业名
-				name.text( Info.subClass != HeroSubClass.NONE && Info.subClass != HeroSubClass.EMPTY ? Info.subClass.title() :Info.heroClass.title() );
+				name.text( Info.subClass != HeroSubClass.NONE && Info.subClass != HeroSubClass.EMPTY ? Info.subClass.title() :Info.classTitle() );
 			}
 
 

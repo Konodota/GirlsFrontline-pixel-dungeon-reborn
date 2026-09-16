@@ -149,6 +149,7 @@ public class GamesInProgress {
 		info.heroClass = hero.heroClass;
 		info.subClass = hero.subClass;
 		info.armorTier = hero.tier();
+		info.type561Old = hero.type561Old;
 		
 		info.goldCollected = Statistics.goldCollected;
 		info.maxDepth = Statistics.deepestFloor;
@@ -182,9 +183,19 @@ public class GamesInProgress {
 		public HeroClass    heroClass=HeroClass   .NONE;
 		public HeroSubClass subClass =HeroSubClass.NONE;
 		public int armorTier;
-		
+		//旧版56-1式标志：存档界面的基础职业名显示为“老练的561式”以作区分
+		public boolean type561Old;
+
 		public int goldCollected;
 		public int maxDepth;
+
+		//存档界面使用的基础职业名（未转职时显示）；旧版561式显示独立名称
+		public String classTitle(){
+			if (type561Old && heroClass == HeroClass.TYPE561){
+				return Messages.get(HeroClass.class, "type561_old");
+			}
+			return heroClass.title();
+		}
 	}
 	
 	public static final Comparator<GamesInProgress.Info> scoreComparator = new Comparator<GamesInProgress.Info>() {

@@ -401,6 +401,8 @@ public class WndStartGame extends Window {
 	private static class HeroPane extends Component {
 
 		private HeroClass cl;
+		//跟踪561旧版开关状态，使介绍页切换后返回时职业名能即时刷新
+		private boolean oldMode;
 
 		private Image avatar;
 
@@ -492,8 +494,10 @@ public class WndStartGame extends Window {
 		@Override
 		public synchronized void update() {
 			super.update();
-			if (GamesInProgress.selectedClass != cl){
+			boolean curOldMode = cl == HeroClass.TYPE561 && SPDSettings.type561OldMode();
+			if (GamesInProgress.selectedClass != cl || curOldMode != oldMode){
 				cl = GamesInProgress.selectedClass;
+				oldMode = cl == HeroClass.TYPE561 && SPDSettings.type561OldMode();
 				if (cl != null) {
 					// subtract 1 for NONE class
 					//avatar.frame((cl.ordinal()) * 24, 0, 24, 32);
@@ -507,7 +511,7 @@ public class WndStartGame extends Window {
 					}
 					avatar.frame(col * 24, row * 32, 24, 32);
 
-					name.text(Messages.capitalize(cl.title()));
+					name.text(Messages.capitalize(cl.selectTitle()));
 
 					switch(cl){
 						case WARRIOR:

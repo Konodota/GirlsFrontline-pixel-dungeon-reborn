@@ -97,6 +97,10 @@ public class WndBlackMarket extends Window {
 	private int currentPage = 0;
 	private CategoryButton[] tabs;
 	private ScrollPane pane;
+	//当前滚动区中实际挂载的卡片，重绘前需逐个 destroy：
+	//Group.clear() 只解绑不销毁，而卡片按钮持有全局指针监听器，
+	//不销毁会在关窗后继续拦截商品区矩形的点击（表现为特定区域无法点击移动）
+	private final java.util.ArrayList<Button> pageCards = new java.util.ArrayList<>();
 	private int cols;   //运行时计算的卡片列数
 	private int sideW;  //运行时计算的侧栏宽度
 	private ItemSprite batteryIcon; //标题栏电池图标
@@ -212,6 +216,12 @@ public class WndBlackMarket extends Window {
 	//构建某一分类页的卡片；武器类（第1页）第一格为 P90 永久解锁商品，其余暂为占位卡片
 	private void buildPage(int page) {
 		Component content = pane.content();
+		//必须先销毁上一页卡片再 clear：否则解绑后的按钮热区仍挂在全局指针信号上，
+		//即使本窗口关闭也会持续吞掉商品区所在屏幕矩形的点击
+		for (Button card : pageCards) {
+			card.destroy();
+		}
+		pageCards.clear();
 		content.clear();
 
 		float paneW = pane.width();
@@ -262,8 +272,9 @@ public class WndBlackMarket extends Window {
 		for (int r = 0; r < rows; r++) {
 			for (int c = 0; c < cols && r * cols + c < ITEMS_PER_PAGE; c++) {
 				int idx = r * cols + c;
-				cards[idx].setRect(c * (cardW + GAP), y, cardW, rowH[r]);
-				content.add(cards[idx]);
+			cards[idx].setRect(c * (cardW + GAP), y, cardW, rowH[r]);
+			content.add(cards[idx]);
+			pageCards.add(cards[idx]);
 			}
 			y += rowH[r] + GAP;
 		}
