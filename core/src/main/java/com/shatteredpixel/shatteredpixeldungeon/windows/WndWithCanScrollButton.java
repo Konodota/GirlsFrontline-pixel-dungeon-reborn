@@ -93,7 +93,10 @@ public class WndWithCanScrollButton extends Window {
             }
             content.add((Button) btn);
         }
-        content.setSize(120, ((Button) buttons.get(buttons.size()-1)).bottom());
+        if (!buttons.isEmpty())
+            content.setSize(120, ((Button) buttons.get(buttons.size()-1)).bottom());
+        else
+            content.setSize(120, 0);
         list.setSize( list.width(), list.height() );
         list.setRect(0, (int) pos, 120, HEIGHT - Math.round(buttonsB.size() / (float) buttonsBPerRow) * (btnHeight + GAP));
         list.scrollTo(0, 0);

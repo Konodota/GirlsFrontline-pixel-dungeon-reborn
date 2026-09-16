@@ -68,9 +68,7 @@ public class ItemHolder extends Bag {
     @Override
     public ArrayList<String> actions(Hero hero ) {
         ArrayList<String> actions = super.actions( hero );
-        if (Dungeon.depth == 1) {
-            actions.add( AC_ADD );
-        }
+        actions.add( AC_ADD );
         return actions;
     }
 

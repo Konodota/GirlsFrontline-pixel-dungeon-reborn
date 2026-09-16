@@ -136,9 +136,10 @@ public class ScrollPane extends Component {
 				dragging = false;
 				thumb.am = THUMB_ALPHA;
 
-			} else {
-
-				PointF p = content.camera.screenToCamera( (int) event.current.x, (int) event.current.y );
+			} else if (curEvent == event) {
+				//必须确认 DOWN 起始于本面板（curEvent==event），否则上方窗口的按钮按下后拖到本面板松开会穿透误触。
+				//用按下位置(event.start)而非松开位置(event.current)定位，防止"按下A、拖到B松开"误触B位置的元素。
+				PointF p = content.camera.screenToCamera( (int) event.start.x, (int) event.start.y );
 				ScrollPane.this.onClick( p.x, p.y );
 
 			}
