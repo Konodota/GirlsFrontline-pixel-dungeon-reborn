@@ -25,9 +25,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.ArtifactRecharge;
-import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Bleeding;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
-import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Cripple;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Empulse;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Recharging;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
@@ -42,6 +40,7 @@ import com.watabou.utils.Random;
 /**
  * 旧版56-1式突击步枪（重制前的机制），作为同贴图的独立武器保留。
  * 通过561角色能力介绍页的隐藏开关在新开局时启用，不影响新版Gun561的任何能力。
+ * 旧版GUN_MASTER转职后可用56式升级配件改造为旧版56-2式（Gun562Old）。
  */
 public class Gun561Old extends ShootGun {
 	{
@@ -73,7 +72,7 @@ public class Gun561Old extends ShootGun {
 
 	@Override
 	public void onShootComplete(int cell, int lvl){
-		//旧版射击结算：无护盾/无天赋减CD/无ShootTracker/无EMPCharge
+		//旧版射击结算：无护盾/无FAST_RELOAD减CD/无ShootTracker/无EMPCharge
 		BombDestory(cell);
 		BombAttack(cell, lvl);
 		if(!Dungeon.hero.isAlive()){
@@ -81,8 +80,6 @@ public class Gun561Old extends ShootGun {
 		}
 		hasCharge=false;
 		int down = 0;
-		//旧版GUN_MASTER（现代重生者）转职天赋：改进型榴弹3点时装填冷却170回合
-		cooldownTurns = (Dungeon.hero.pointsInTalent(Talent.ENHANCE_GRENADE)>=3? 170: 200);
 		switch (Dungeon.hero.pointsInTalent(Talent.Type56Three_Bomb)){
 			case 1: down=15;break;
 			case 2: down=35;break;
@@ -110,14 +107,6 @@ public class Gun561Old extends ShootGun {
 						attack+=Dungeon.hero.pointsInTalent(Talent.EMP_Three);
 					int damage = BombDamage(lvl);
 					target.damage((int)(damage*rate), this);
-
-					//旧版GUN_MASTER（现代重生者）转职天赋：改进型榴弹（+1流血，+2机动模块故障）
-					if(Dungeon.hero.hasTalent(Talent.ENHANCE_GRENADE)){
-						Buff.affect(target, Bleeding.class).set(Math.round((int)(damage*rate)*0.4f));
-						if(Dungeon.hero.pointsInTalent(Talent.ENHANCE_GRENADE)>=2){
-							Buff.prolong(target, Cripple.class, 3f);
-						}
-					}
 
 					if(target.isAlive()&&EMPduration>0){
 						Buff.prolong(target, Empulse.class, EMPduration);

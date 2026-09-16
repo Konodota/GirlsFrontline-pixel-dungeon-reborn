@@ -4,7 +4,9 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Gun561;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Gun561Old;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Gun562;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Gun562Old;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 
@@ -40,7 +42,24 @@ public class Gun562Accessories extends Item{
 	}
 
 	private void UpgradeGun561(Hero hero){
-		if(hero.belongings.weapon instanceof Gun561){
+		if(hero.belongings.weapon instanceof Gun561Old){
+			//旧版56-1改造为旧版56-2（隐藏功能，同贴图独立武器，不影响新版改造链）
+			Gun561Old gun561=(Gun561Old)hero.belongings.weapon;
+			Gun562Old gun562=new Gun562Old();
+
+			gun562.clone(gun561);
+			gun562.activate(hero);
+			(hero.belongings.weapon=gun562).identify();
+			int id=Dungeon.quickslot.getSlot(gun561);
+			if(id>=0){
+				Dungeon.quickslot.setSlot(id,gun562);
+			}
+
+			hero.spendAndNext(3f);
+			detach(hero.belongings.backpack);
+
+			GLog.i(Messages.get(this,"succeed!"));
+		}else if(hero.belongings.weapon instanceof Gun561){
 			Gun561 gun561=(Gun561)hero.belongings.weapon;
 			Gun562 gun562=new Gun562();
 
