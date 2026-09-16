@@ -26,6 +26,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.GamesInProgress;
 import com.shatteredpixel.shatteredpixeldungeon.GirlsFrontlinePixelDungeon;
+import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.ArtifactRecharge;
@@ -187,6 +188,8 @@ public enum Talent {
 	EMP_One(139, 3), EMP_Two(140, 3), EMP_Three(141, 3),
 	//type561 T3-2 GUN
 	GUN_1(142, 3), GUN_2(143, 3), GUN_3(144, 3),
+	//旧版56-1式角色 GUN_MASTER 转职天赋（隐藏功能，仅旧版模式使用）
+	NEWLIFE(142, 3), MORE_ACCURATE(143, 3), ENHANCE_GRENADE(144, 3),
     //type561 T4-1
     Type56FourOneOne(137, 4), Type56FourOneTwo(137, 4),Type56FourOneThree(137, 4),
     //type561 T4-2
@@ -625,7 +628,12 @@ public enum Talent {
 				Collections.addAll(tierTalents, NATURES_BOUNTY, SURVIVALISTS_INTUITION, FOLLOWUP_STRIKE, NATURES_AID);
 				break;
 			case TYPE561:
-				Collections.addAll(tierTalents, Type56One_FOOD , Type56One_Identify, Type56One_Damage, Type56_14);
+				if (SPDSettings.type561OldMode()){
+					//旧版56-1式角色天赋表（隐藏功能）
+					Collections.addAll(tierTalents, NICE_FOOD, OLD_SOLDIER, FAST_RELOAD, BETTER_FOOD);
+				} else {
+					Collections.addAll(tierTalents, Type56One_FOOD , Type56One_Identify, Type56One_Damage, Type56_14);
+				}
 				break;
 			case GSH18:
 				Collections.addAll(tierTalents, GSH18_MEAL_TREATMENT, GSH18_DOCTOR_INTUITION, GSH18_CLOSE_COMBAT, GSH18_STAR_SHIELD);
@@ -667,7 +675,12 @@ public enum Talent {
 				Collections.addAll(tierTalents, INVIGORATING_MEAL, RESTORED_NATURE, REJUVENATING_STEPS, HEIGHTENED_SENSES, DURABLE_PROJECTILES);
 				break;
 			case TYPE561:
-				Collections.addAll(tierTalents, Type56Two_FOOD, Type56Two_Armor, Type56_23V4, Type56Two_Sight, Type56Two_Damage);
+				if (SPDSettings.type561OldMode()){
+					//旧版56-1式角色天赋表（隐藏功能）
+					Collections.addAll(tierTalents, BARGAIN_SKILLS, TRAP_EXPERT, HOW_DARE_YOU, JIEFANGCI, NIGHT_EXPERT);
+				} else {
+					Collections.addAll(tierTalents, Type56Two_FOOD, Type56Two_Armor, Type56_23V4, Type56Two_Sight, Type56Two_Damage);
+				}
 				break;
             case GSH18:
                 Collections.addAll(tierTalents, GSH18_ENERGIZING_MEAL, GSH18_CHAIN_SHOCK, GSH18_LOGISTICS_SUPPORT, GSH18_COMIC_HEART, GSH18_MEDICAL_COMPATIBILITY);
@@ -704,7 +717,12 @@ public enum Talent {
 				Collections.addAll(tierTalents, POINT_BLANK, SEER_SHOT);
 				break;
 			case TYPE561:
-				Collections.addAll(tierTalents, Type56Three_Bomb, Type56Three_Book);
+				if (SPDSettings.type561OldMode()){
+					//旧版56-1式角色天赋表（隐藏功能）
+					Collections.addAll(tierTalents, SEARCH_ARMY, ELITE_ARMY);
+				} else {
+					Collections.addAll(tierTalents, Type56Three_Bomb, Type56Three_Book);
+				}
 				break;
             case GSH18:
                 Collections.addAll(tierTalents,GSH18_INTELLIGENCE_AWARENESS,GSH18_AGILE_MOVEMENT);
@@ -778,7 +796,12 @@ public enum Talent {
 				Collections.addAll(tierTalents, EMP_One, EMP_Two, EMP_Three);
 				break;
 			case GUN_MASTER:
-				Collections.addAll(tierTalents, GUN_1V2, GUN_2V2, GUN_3);
+				if (SPDSettings.type561OldMode()){
+					//旧版56-1式角色转职天赋（隐藏功能）
+					Collections.addAll(tierTalents, NEWLIFE, MORE_ACCURATE, ENHANCE_GRENADE);
+				} else {
+					Collections.addAll(tierTalents, GUN_1V2, GUN_2V2, GUN_3);
+				}
 				break;
 			case FUTURE_STAR:
 				Collections.addAll(tierTalents, GSH18_INTELLIGENCE_AWARENESS, GSH18_SIRIUS_HEART, GSH18_COMPANION_SYNC);

@@ -65,12 +65,16 @@ import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.generator.TestMi
 import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.generator.TestPotion;
 import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.generator.TestRing;
 import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.generator.debugBook;
+import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.items.BrokenSeal;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.Waterskin;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.ClothArmor;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.CloakOfShadows;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.RedBook;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.RedBookOld;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Gun561;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Gun561Old;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.FoodPouch;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.MagicalHolster;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.PotionBandolier;
@@ -101,7 +105,6 @@ import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfMagicMissile;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.SpiritBow;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.M4A1;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MagesStaff;
-import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Gun561;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.SA.Welrod;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.SMG.M9;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.SMG.Ump45;
@@ -346,6 +349,24 @@ public enum HeroClass {
 	}
 
 	private static void initType561( Hero hero ) {
+		if (SPDSettings.type561OldMode()){
+			//旧版56-1式角色机制（隐藏功能，能力介绍页切换，仅影响新开局）
+			Gun561Old gun561 = new Gun561Old();
+			(hero.belongings.weapon=gun561).identify();
+			hero.belongings.weapon.activate(hero);
+
+			RedBookOld redBook = new RedBookOld();
+			(hero.belongings.artifact=redBook).identify();
+			hero.belongings.artifact.activate(hero);
+
+			Dungeon.quickslot.setSlot(0,redBook);
+			Dungeon.quickslot.setSlot(1,gun561);
+
+			new SaltyZongzi().collect();
+			new PotionOfMindVision().identify();
+			Hunger.minLevel = 0;
+			return;
+		}
         Hunger.minLevel = -150;
 		Gun561 gun561 = new Gun561();
 		(hero.belongings.weapon = gun561).identify();
@@ -421,7 +442,8 @@ public enum HeroClass {
                 person = new ArmorAbility[]{new SpectralBlades(), new NaturesPower(), new SpiritHawk()};
                 break;
 			case TYPE561:
-                person = new ArmorAbility[]{new Type56FourOne(), new Type56FourTwo(), new Type56FourThree()};
+				//旧版模式沿用新版护甲技能（旧版护甲技能为空缺）
+				person = new ArmorAbility[]{new Type56FourOne(), new Type56FourTwo(), new Type56FourThree()};
                 break;
 			case GSH18:
 				person = new ArmorAbility[]{new HeroicLeap(), new Shockwave(), new Endure()}; // 使用战士的技能

@@ -74,6 +74,18 @@ public class SPDSettings extends GameSettings {
 		return getBoolean( KEY_P90_UNLOCKED, false );
 	}
 
+	//旧版56-1式角色隐藏开关（跨存档保留；在561能力介绍页切换，仅影响新开局的角色生成，不影响新版任何能力）
+
+	public static final String KEY_TYPE561_OLD_MODE = "type561_old_mode";
+
+	public static void type561OldMode( boolean value ) {
+		put( KEY_TYPE561_OLD_MODE, value );
+	}
+
+	public static boolean type561OldMode() {
+		return getBoolean( KEY_TYPE561_OLD_MODE, false );
+	}
+
 	//机密商店永久解锁：女猎手“超级小爱”转职（跨存档保留；未解锁时隼无法在转职界面看到 SUPER_AI 按钮）
 
 	public static final String KEY_SUPER_AI_UNLOCKED = "shop_unlocked_super_ai";

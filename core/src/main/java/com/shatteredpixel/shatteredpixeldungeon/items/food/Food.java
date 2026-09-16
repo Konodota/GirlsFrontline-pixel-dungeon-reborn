@@ -31,6 +31,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Hunger;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.effects.SpellSprite;
+import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.RedBookSpell.ExtraFood;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Catalog;
@@ -142,6 +143,13 @@ public class Food extends Item {
             buffedEnergy*=1.3f;
             hero.buff(ExtraFood.FoodExtra.class).detach();
         }
+		//旧版天赋：美食家（BETTER_FOOD）吃咸粽子回血（561旧版角色隐藏功能）
+		if (hero.hasTalent(Talent.BETTER_FOOD)&&this instanceof SaltyZongzi){
+			int heal=(int)(hero.HT*(0.08f*hero.pointsInTalent(Talent.BETTER_FOOD)-0.06f));
+			hero.HP=Math.min(hero.HP+heal,hero.HT);
+			hero.sprite.emitter().burst(Speck.factory(Speck.HEALING),hero.pointsInTalent(Talent.BETTER_FOOD));
+			buffedEnergy+=30f+10f*hero.pointsInTalent(Talent.BETTER_FOOD);
+		}
 		if (Dungeon.isChallenged(Challenges.NO_FOOD)){
 			buffedEnergy/=3f;
 		}

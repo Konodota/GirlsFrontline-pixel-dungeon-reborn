@@ -23,6 +23,8 @@ package com.shatteredpixel.shatteredpixeldungeon.windows;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
+import com.shatteredpixel.shatteredpixeldungeon.GirlsFrontlinePixelDungeon;
+import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
@@ -140,11 +142,13 @@ public class WndHeroInfo extends WndTabbed {
 
 	}
 
-	private static class HeroInfoTab extends Component {
+	private class HeroInfoTab extends Component {
 
 		private RenderedTextBlock title;
 		private RenderedTextBlock[] info;
 		private Image[] icons;
+		//561旧版切换热区：覆盖在袖珍本图标上，点击弹出版本切换确认窗口
+		private IconButton bookToggle;
 
 		public HeroInfoTab(HeroClass cls){
 			super();
@@ -189,6 +193,36 @@ public class WndHeroInfo extends WndTabbed {
 					icons = new Image[]{ new ItemSprite(ItemSpriteSheet.REDBOOK),
 							new ItemSprite(ItemSpriteSheet.GUN561),
 							new ItemSprite(ItemSpriteSheet.SCROLL_ISAZ)};
+					//隐藏功能：点击介绍窗口内的袖珍本图标，切换56-1式角色的新版/旧版机制
+					bookToggle = new IconButton(){
+						@Override
+						protected void onClick() {
+							boolean isOld = SPDSettings.type561OldMode();
+							String msg = isOld
+									? Messages.get(WndHeroInfo.class, "mode_toggle_msg_to_new")
+									: Messages.get(WndHeroInfo.class, "mode_toggle_msg_to_old");
+							String confirm = isOld
+									? Messages.get(WndHeroInfo.class, "mode_confirm_to_new")
+									: Messages.get(WndHeroInfo.class, "mode_confirm_to_old");
+							Game.scene().addToFront(new WndOptions(
+									new ItemSprite(ItemSpriteSheet.REDBOOK),
+									Messages.get(WndHeroInfo.class, "mode_toggle_title"),
+									msg,
+									confirm,
+									Messages.get(WndHeroInfo.class, "mode_cancel")
+							){
+								@Override
+								protected void onSelect(int index) {
+									if (index == 0) {
+										SPDSettings.type561OldMode(!SPDSettings.type561OldMode());
+										WndHeroInfo.this.hide();
+										GirlsFrontlinePixelDungeon.scene().addToFront(new WndHeroInfo(cls));
+									}
+								}
+							});
+						}
+					};
+					add(bookToggle);
 					break;
 				case GSH18:
 					icons = new Image[]{ new ItemSprite(ItemSpriteSheet.GSH18),
@@ -224,6 +258,11 @@ public class WndHeroInfo extends WndTabbed {
 				icons[i].y = info[i].top() + (info[i].height() - icons[i].height())/2;
 
 				pos = info[i].bottom() + 4*MARGIN;
+			}
+
+			if (bookToggle != null){
+				//热区覆盖在袖珍本图标上（icons[0]），视觉与介绍窗口原版一致
+				bookToggle.setRect(icons[0].x, icons[0].y, icons[0].width(), icons[0].height());
 			}
 
 			height = Math.max(height, pos - 4*MARGIN);

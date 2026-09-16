@@ -129,6 +129,8 @@ import com.shatteredpixel.shatteredpixeldungeon.items.keys.SkeletonKey;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.Potion;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfExperience;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfHealing;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfStrength;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfUpgrade;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.elixirs.ElixirOfMight;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.exotic.PotionOfDivineInspiration;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
@@ -582,6 +584,14 @@ public class Hero extends Char {
 
 		float accuracy = 1;
 		accuracy *= RingOfAccuracy.accuracyMultiplier( this );
+
+		//旧版56-1式角色转职天赋：精度提升（GUN_MASTER旧版，隐藏功能）
+		switch(pointsInTalent(Talent.MORE_ACCURATE)){
+			case 0:default:break;
+			case 1:accuracy*=1.3f;break;
+			case 2:accuracy*=1.6f;break;
+			case 3:accuracy*=2f;break;
+		}
 
         BasicBuffs.Accuracy acc = Dungeon.hero.buff(BasicBuffs.Accuracy.class);
         if (acc != null)
@@ -2039,6 +2049,21 @@ public class Hero extends Char {
 			interrupt();
 			resting = false;
 			Catalog.countUse(Ankh.class);
+
+			//旧版56-1式角色转职天赋：老兵新生（GUN_MASTER旧版，隐藏功能）
+			if(hasTalent(Talent.NEWLIFE)){
+				if(ankh.isBlessed()){
+					new PotionOfHealing().apply(this);
+				}
+
+				if(pointsInTalent(Talent.NEWLIFE)>=2){
+					new PotionOfStrength().apply(this);
+				}
+
+				if(pointsInTalent(Talent.NEWLIFE)>=3){
+					new ScrollOfUpgrade().collect();
+				}
+			}
 
 			if (ankh.isBlessed()) {
 				this.HP = HT / 4;
