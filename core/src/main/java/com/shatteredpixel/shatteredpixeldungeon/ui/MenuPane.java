@@ -31,6 +31,7 @@ import com.shatteredpixel.shatteredpixeldungeon.journal.Document;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
+import com.shatteredpixel.shatteredpixeldungeon.utils.Holidays;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndChallenges;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndGame;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndJournal;
@@ -72,11 +73,28 @@ public class MenuPane extends Component {
 	private DangerIndicator danger;
 
 	//局内系统时钟：显示日期与设备时间，位于菜单功能按钮下方，右对齐
-	private BitmapText dateText;
+	private GradientBitmapText dateText;
 	private BitmapText clockText;
 	private float clockAcc = 0f;
 	private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat( "yyyy-MM-dd", Locale.getDefault() );
 	private static final SimpleDateFormat TIME_FORMAT = new SimpleDateFormat( "HH:mm", Locale.getDefault() );
+
+	//节日对应颜色：当日期为能触发彩蛋的节日时，日期文本使用对应双色渐变
+	private static final int COLOR_XMAS_START        = 0xFF3B3B; // 圣诞节：红
+	private static final int COLOR_XMAS_END          = 0x2ECC71; // 圣诞节：绿
+	private static final int COLOR_HWEEN_START       = 0xFF8800; // 万圣节：南瓜橙
+	private static final int COLOR_HWEEN_END         = 0x8E44AD; // 万圣节：幽紫
+	private static final int COLOR_BREAD_START       = 0xE0A040; // 面包节：肉桂金
+	private static final int COLOR_BREAD_END         = 0x8B5A2B; // 面包节：焦棕
+	private static final int COLOR_MID_AUTUMN_START  = 0x9EC9FF; // 中秋节：月光蓝
+	private static final int COLOR_MID_AUTUMN_END    = 0xFFFFFF; // 中秋节：银白
+	private static final int COLOR_EASTER_START      = 0xFF99CC; // 复活节：粉彩
+	private static final int COLOR_EASTER_END        = 0x98FB98; // 复活节：嫩绿
+	private static final int COLOR_DEFAULT_START     = 0xCACFC2; // 普通日期
+	private static final int COLOR_DEFAULT_END       = 0xA8AEA0; // 普通日期（微渐变）
+	//玩家设置的蛋糕节日：金色到白色的渐变
+	private static final int COLOR_CAKE_START  = 0xFFD700; // 金色
+	private static final int COLOR_CAKE_END    = 0xFFFFFF; // 白色
 
 	public static final int WIDTH = 32;
 
@@ -183,8 +201,8 @@ public class MenuPane extends Component {
 
 		add( pickedUp = new Toolbar.PickedUpItem());
 
-		dateText = new BitmapText( PixelScene.pixelFont);
-		dateText.hardlight( 0xCACFC2 );
+		dateText = new GradientBitmapText( PixelScene.pixelFont);
+		applyDateColor( dateText );
 		dateText.text( DATE_FORMAT.format( new Date() ) );
 		add( dateText );
 
@@ -268,11 +286,45 @@ public class MenuPane extends Component {
 			clockAcc -= 1f;
 			String d = DATE_FORMAT.format( new Date() );
 			String t = TIME_FORMAT.format( new Date() );
+			//节日/蛋糕日可能随日期变化，每秒刷新日期文本颜色
+			applyDateColor( dateText );
 			if (!d.equals( dateText.text() ) || !t.equals( clockText.text() )) {
 				dateText.text( d );
 				clockText.text( t );
 				layoutClock();
 			}
+		}
+	}
+
+	/**
+	 * 根据当前日期为日期文本设置双色渐变：
+	 * - 玩家设置的蛋糕节日 → 金色到白色的渐变
+	 * - 能触发彩蛋的节日 → 节日对应的双色渐变
+	 * - 其他日期 → 默认灰色微渐变
+	 */
+	private void applyDateColor( GradientBitmapText text ) {
+		int[] colors = currentDateColors();
+		text.setGradientColors( colors[0], colors[1] );
+	}
+
+	private int[] currentDateColors() {
+		if (SPDSettings.isSpecialDay()) {
+			return new int[]{ COLOR_CAKE_START, COLOR_CAKE_END };
+		}
+		return festivalColors();
+	}
+
+	private int[] festivalColors() {
+		switch (Holidays.holiday) {
+			case XMAS:               return new int[]{ COLOR_XMAS_START, COLOR_XMAS_END };
+			case HWEEN:              return new int[]{ COLOR_HWEEN_START, COLOR_HWEEN_END };
+			case BREAD_INDEPENDENT:  return new int[]{ COLOR_BREAD_START, COLOR_BREAD_END };
+			case midAutumnFestival:  return new int[]{ COLOR_MID_AUTUMN_START, COLOR_MID_AUTUMN_END };
+			case EASTER:             return new int[]{ COLOR_EASTER_START, COLOR_EASTER_END };
+			case NONE: default:
+				//Holidays 静态块仅覆盖到 12 月第 3 周，isXMAS 额外覆盖 12 月 17 日起
+				if (Dungeon.isXMAS()) return new int[]{ COLOR_XMAS_START, COLOR_XMAS_END };
+				return new int[]{ COLOR_DEFAULT_START, COLOR_DEFAULT_END };
 		}
 	}
 
