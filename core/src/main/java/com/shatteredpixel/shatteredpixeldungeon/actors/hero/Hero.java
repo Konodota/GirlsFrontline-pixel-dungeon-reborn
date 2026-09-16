@@ -310,16 +310,13 @@ public class Hero extends Char {
 			strBonus += buff.boost();
 		}
 		
-		/*561角色：当饥饿度低于饥饿状态时，力量+1；当饥饿度处于饥饿状态且力量大于等于13时，力量-1，现在已经不需要了
+		//旧版56-1式角色：极度饥饿且力量大于12时，力量-1（12力量以下不生效）
 		Hunger hunger = buff(Hunger.class);
-		if (hunger != null && heroClass == HeroClass.TYPE561 ){
-            if( !hunger.isHungry()){
-                strBonus +=1;
-            }else if (hunger.isStarving() && STR >= 13) {
-                strBonus -= 1;
-            }
+		if (hunger != null && heroClass == HeroClass.TYPE561 && Hunger.minLevel >= 0){
+			if (hunger.isStarving() && STR >= 13) {
+				strBonus -= 1;
+			}
 		}
-		*/
 
 		return STR + strBonus;
 	}

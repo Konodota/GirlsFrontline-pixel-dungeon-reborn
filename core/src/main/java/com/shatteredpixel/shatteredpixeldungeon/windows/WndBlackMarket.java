@@ -79,13 +79,13 @@ public class WndBlackMarket extends Window {
 	private static final int ITEMS_PER_PAGE = 6;  //每个分类下的占位卡片数量
 
 	//武器类第一格：P90 永久解锁商品（解锁后才会进入正常局内武器生成池）
-	private static final int P90_UNLOCK_PRICE = 25;
+	private static final int P90_UNLOCK_PRICE = 10;
 
 	//武器类第二格：圣诞入场券商品（购买后放入背包，交给营地FNC永久解锁圣诞节彩蛋功能）
 	private static final int XMAS_TICKET_PRICE = 10;
 
 	//武器类第三格：超级小爱 DLC 解锁券（购买后立即解锁女猎手“超级小爱”转职按钮）
-	private static final int SUPER_AI_DLC_PRICE = 25;
+	private static final int SUPER_AI_DLC_PRICE = 800;
 
 	private static final int SEP_COLOR      = 0xFF000000; //分隔条
 	private static final int ICON_FRAME     = 0x33FFFFFF; //卡片图标底框
