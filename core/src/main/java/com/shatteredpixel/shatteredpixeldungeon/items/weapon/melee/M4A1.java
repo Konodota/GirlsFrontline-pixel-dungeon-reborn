@@ -128,6 +128,7 @@ public class M4A1 extends MeleeWeapon implements ActionIndicator.Action {
 			IntensifySkill.INSTANCE(hero);
 		}
 	}
+	public boolean lateThrowingReady = false;
 	private CellSelector.Listener ThrowingSelector(boolean ready) {
 		return new CellSelector.Listener() {
 			@Override
@@ -136,10 +137,13 @@ public class M4A1 extends MeleeWeapon implements ActionIndicator.Action {
 					if (!ThrowingSkill.Throwing_INSTANCE(target))
 						return;
 					if (ready) {
-						throwing_ready = false;
+						if (!lateThrowingReady)
+							throwing_ready = false;
+						lateThrowingReady = false;
 						updateQuickslot();
 						return;
 					}
+					lateThrowingReady = false;
 					float delay = delayFactor(Dungeon.hero);
 					if (delay * 4 < 1F)
 						coolDownLeft = 1;
@@ -164,11 +168,13 @@ public class M4A1 extends MeleeWeapon implements ActionIndicator.Action {
 					if (!ThrowingSkill.Snipe_INSTANCE(target))
 						return;
 					if (ready) {
-						throwing_ready = false;
+						if (!lateThrowingReady)
+							throwing_ready = false;
+						lateThrowingReady = false;
 						updateQuickslot();
 						return;
 					}
-
+					lateThrowingReady = false;
 					float delay = delayFactor(Dungeon.hero);
 					if (delay * 4 < 1F)
 						coolDownLeft = 1;

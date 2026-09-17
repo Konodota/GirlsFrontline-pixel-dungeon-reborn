@@ -135,6 +135,9 @@ public class Item implements Bundlable {
 
 	protected String name = Messages.get(this, "name");
 	public static boolean ignoreGuess;
+	public boolean canUse( Hero hero ) {
+		return hero.belongings.contains(this);
+	}
 	@Override
 	public String toString() {
 

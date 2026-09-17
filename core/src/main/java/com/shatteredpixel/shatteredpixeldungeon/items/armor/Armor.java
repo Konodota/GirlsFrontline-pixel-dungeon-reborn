@@ -74,7 +74,6 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndBag;
-import com.shatteredpixel.shatteredpixeldungeon.windows.WndInfoItem;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndStartGame;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndUseItem;
 import com.watabou.noosa.particles.Emitter;
@@ -153,9 +152,14 @@ public class Armor extends EquipableItem {
         if (inside == insideArmor)
             return;
         //旧外骨骼无法取下（如被诅咒）时终止本次复合，新外骨骼退回背包
-        if (inside != null && !inside.doUnequip(hero, true)){
-            if (insideArmor != null) insideArmor.collect(hero.belongings.backpack);
-            return;
+        if (inside != null){
+			if (!inside.doUnequip(hero, true)) {
+				if (insideArmor != null)
+					if (!insideArmor.collect(hero.belongings.backpack))
+						Dungeon.level.drop(insideArmor, hero.pos);
+				return;
+			}
+			inside.outside = null;
         }
         if (insideArmor == null)
             return;
@@ -172,7 +176,7 @@ public class Armor extends EquipableItem {
                 GLog.n( Messages.get(Armor.class, "broken") );
             }
         }
-        if (hero.belongings.armor() == this)
+        if (hero != null && hero.belongings.armor() == this)
             insideArmor.activate(hero);
     }
 
@@ -274,6 +278,7 @@ public class Armor extends EquipableItem {
 				actions.add(AC_INSIDE);
 		}
 		else {
+			actions.add(AC_UNEQUIP);
 			actions.remove(AC_EQUIP);
 			if (!outside.unEquipable(hero)) {
 				actions.remove(AC_DROP);
@@ -349,18 +354,28 @@ public class Armor extends EquipableItem {
 						return false;
 					if (!a.cursedKnown)
 						return false;
-					return !a.isEquipped(hero) || !a.unEquipable(hero);
+					return !a.isEquipped(hero) || a.unEquipable(hero);
 				}
 				@Override
 				public void onSelect(Item item) {
-					if (item instanceof Armor)
-						bindInside((Armor) item.detach(hero.belongings.backpack));
+					if (item instanceof Armor) {
+						Armor a = (Armor) item;
+						if (item.isEquipped(hero))
+							a.doUnequip(hero, false);
+						else
+							a.detachAll(hero.belongings.backpack);
+						bindInside(a);
+					}
 				}
 			});
 		}
 		else if (action.equals(AC_VIEW_INSIDE))
 			//查看已复合的外骨骼
 			GameScene.show(new WndUseItem(null, inside));
+	}
+	@Override
+	public boolean canUse( Hero hero ) {
+		return super.canUse(hero) || outside != null;
 	}
 
     protected mixArmor mixArmorTracker;
@@ -462,17 +477,26 @@ public class Armor extends EquipableItem {
 
 	@Override
 	public boolean doUnequip( Hero hero, boolean collect, boolean single ) {
-		if (super.doUnequip( hero, collect, single )) {
+		if (outside != null && outside.unEquipable(hero)) {
+			outside.inside = null;
+			outside = null;
+			if (!doPickUp(hero))
+				Dungeon.level.drop(this, hero.pos);
+
+			BrokenSeal.WarriorShield sealBuff = hero.buff(BrokenSeal.WarriorShield.class);
+			if (sealBuff != null && sealBuff.armor == this) {
+				sealBuff.setArmor( null );
+			}
+
+			return true;
+		}
+		else if (super.doUnequip( hero, collect, single )) {
 
 			//仅当卸下的是穿着中的基底护甲时才清空装备位（复合外骨骼的取下由 bindInside 处理）
 			if (hero.belongings.armor == this) {
 				hero.belongings.armor = null;
 				((HeroSprite)hero.sprite).updateArmor();
 			}
-			else if (hero.belongings.armor != null && hero.belongings.armor.inside == this) {
-				hero.belongings.armor.inside = null;
-			}
-
 			BrokenSeal.WarriorShield sealBuff = hero.buff(BrokenSeal.WarriorShield.class);
 			if (sealBuff != null && sealBuff.armor == this) {
 				sealBuff.setArmor( null );

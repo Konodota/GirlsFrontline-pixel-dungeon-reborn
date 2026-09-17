@@ -10,10 +10,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.DandelionOwner.CardCalcula
 import com.shatteredpixel.shatteredpixeldungeon.items.DandelionOwner.CardSelector;
 import com.shatteredpixel.shatteredpixeldungeon.items.DandelionOwner.FinalCard;
 import com.shatteredpixel.shatteredpixeldungeon.items.DandelionOwner.RareCard;
-import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfInvisibility;
-import com.shatteredpixel.shatteredpixeldungeon.items.potions.exotic.PotionOfShroudingFog;
-import com.shatteredpixel.shatteredpixeldungeon.ui.ActionIndicator;
-import com.shatteredpixel.shatteredpixeldungeon.ui.Icons;
+import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.watabou.noosa.Image;
 import com.watabou.utils.Bundle;
 
@@ -31,7 +28,7 @@ public class VHS_Hack extends CounterBuff {
     }
     @Override
     public String desc(){
-        return "当前充能点数:" + count() + "\n当前剩余骇入次数:" + hackLeft;
+        return Messages.get(this, "desc", count(), hackLeft);
     }
     @Override
     public boolean act(){

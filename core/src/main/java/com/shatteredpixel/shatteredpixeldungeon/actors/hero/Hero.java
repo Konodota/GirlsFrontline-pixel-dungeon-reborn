@@ -97,7 +97,6 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap.Type;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.KindOfWeapon;
-import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.curses.Bulk;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.glyphs.AntiMagic;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.glyphs.Brimstone;
@@ -300,7 +299,7 @@ public class Hero extends Char {
 		CapeOfThorns.ThornCurse thornCurse = buff(CapeOfThorns.ThornCurse.class);
 		if (thornCurse != null) {
 			HT -= thornCurse.reduction();
-			if (HT < 1) HT = 1;
+			if (HT <= 0) die(CapeOfThorns.ThornCurse.class);
 		}
 
 		if (boostHP){
@@ -2041,8 +2040,8 @@ public class Hero extends Char {
 			GameScene.flash(0x80FFFF40);
 			Sample.INSTANCE.play(Assets.Sounds.TELEPORT);
 			GLog.w(Card.EnumString(FinalCard.HS2000.Webley, "fail"));
-			HP = HT / 4;
 			PotionOfHealing.cure(this);
+			HP = HT / 4;
 			Buff.affect(this, HS2000_Shield.class).incShield(HT);
 			Buff.affect(this, IntensifySkill.Intensify.class, 20F);
 			CardSelector.INSTANCE().destroyCard(FinalCard.HS2000.Webley);
@@ -2078,9 +2077,9 @@ public class Hero extends Char {
 			}
 
 			if (ankh.isBlessed()) {
-				this.HP = HT / 4;
 
 				PotionOfHealing.cure(this);
+				this.HP = HT / 4;
 				Buff.prolong(this, AnkhInvulnerability.class, AnkhInvulnerability.DURATION);
 
 				SpellSprite.show(this, SpellSprite.ANKH);

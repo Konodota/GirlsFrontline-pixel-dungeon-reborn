@@ -122,7 +122,7 @@ public abstract class EquipableItem extends Item {
         if (DELUnEquipable)
             return true;
         // 魔免buff下、复活未选中，允许被脱下
-        return !cursed || hero.buff(MagicImmune.class) != null || notWorking(hero);
+        return !cursed || hero != null && (hero.buff(MagicImmune.class) != null || notWorking(hero));
     }
 	protected boolean notWorking(Hero hero){
 		return hero.buff(LostInventory.class) != null && !keptThoughLostInvent;

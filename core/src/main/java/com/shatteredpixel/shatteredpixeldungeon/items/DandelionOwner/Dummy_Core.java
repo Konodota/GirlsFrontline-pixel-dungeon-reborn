@@ -80,7 +80,7 @@ public abstract class Dummy_Core extends Item {
             Dummy_Core core = (Dummy_Core) detach(hero.belongings.backpack);
             core.fixTimeNeed--;
             if (core.collect())
-                Dungeon.quickslot.resetSlot(this, core);
+                Dungeon.quickslot.replaceSlot(this, core);
             else
                 Dungeon.level.drop(core, hero.pos);
             hero.spendAndNext(1F);

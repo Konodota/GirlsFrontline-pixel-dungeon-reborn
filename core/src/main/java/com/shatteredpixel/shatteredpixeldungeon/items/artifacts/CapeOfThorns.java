@@ -24,6 +24,7 @@ package com.shatteredpixel.shatteredpixeldungeon.items.artifacts;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.FlavourBuff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Catalog;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
@@ -55,9 +56,7 @@ public class CapeOfThorns extends Artifact {
 	@Override
 	public ArrayList<String> actions( Hero hero ) {
 		ArrayList<String> actions = super.actions( hero );
-		if (isEquipped( hero ) && cooldown == 0 && charge >= chargeCap) {
-			actions.add( AC_ACTIVATE );
-		}
+		actions.add( AC_ACTIVATE );
 		return actions;
 	}
 
@@ -72,6 +71,8 @@ public class CapeOfThorns extends Artifact {
 				GLog.i( Messages.get(Artifact.class, "need_to_equip") );
 			} else if (cooldown > 0) {
 				GLog.w( Messages.get(this, "already_active") );
+			} else if (cursed) {
+				GLog.w( Messages.get(this, "cursed") );
 			} else if (charge < chargeCap) {
 				GLog.w( Messages.get(this, "no_charge") );
 			} else {
@@ -124,7 +125,7 @@ public class CapeOfThorns extends Artifact {
             lockcha();
 
 			//自然充能：每回合恢复 0.1% 充能
-			if (cooldown == 0 && charge < chargeCap) {
+			if (!isCursed() && cooldown == 0 && charge < chargeCap) {
 				partialCharge += 0.1f;
 				while (partialCharge >= 1) {
 					partialCharge--;
@@ -149,8 +150,10 @@ public class CapeOfThorns extends Artifact {
 		}
 
 		public int proc(int damage, Char attacker, Char defender){
-			if (cooldown == 0){
-				charge += damage*(0.5+level()*0.05);
+			if (!isCursed() && cooldown == 0){
+				partialCharge += damage * (0.5F + level() * 0.05F);
+				while (partialCharge >= 1)
+					partialCharge--;
 				if (charge > chargeCap) charge = chargeCap;
 			}
 
@@ -174,8 +177,10 @@ public class CapeOfThorns extends Artifact {
 			}
 
 			//诅咒效果：50%所受伤害转化为临时最大生命值削减
-			if (isCursed() && damage > 0 && defender instanceof Hero) {
-				applyThornCurse( (Hero) defender, damage );
+			if (isCursed() && defender instanceof Hero) {
+				float dmg = damage * 0.5F;
+				damage = (int) Math.ceil(dmg);
+				applyThornCurse( (Hero) defender, (int) Math.floor(dmg) );
 			}
 
 			updateQuickslot();
@@ -183,9 +188,8 @@ public class CapeOfThorns extends Artifact {
 		}
 
 		private void applyThornCurse( Hero hero, int damage ) {
-			int amount = Math.max( 1, Math.round( damage * 0.5f ) );
-			ThornCurse curse = Buff.affect( hero, ThornCurse.class );
-			curse.extend( amount );
+			int time = hero.buff(ThornCurse.class) == null ? 10 : 5;
+			Buff.affect(hero, ThornCurse.class, time).extend(damage);
 			hero.updateHT( false );
 			BuffIndicator.refreshHero();
 		}
@@ -219,29 +223,14 @@ public class CapeOfThorns extends Artifact {
 
 	/**
 	 * 荆棘诅咒：临时削减最大生命值。
-	 * 持续 6 回合，后续受到伤害会额外延长 3 回合并叠加削减量。
+	 * 持续 10 回合，后续受到伤害会额外延长 5 回合并叠加削减量。
 	 */
-	public static class ThornCurse extends Buff {
-
+	public static class ThornCurse extends FlavourBuff implements Hero.Doom {
 		{
 			type = buffType.NEGATIVE;
 			announced = true;
 		}
-
 		public int reduction = 0;
-		public int left = 0;
-
-		@Override
-		public boolean act() {
-			left--;
-			if (left <= 0) {
-				detach();
-			} else {
-				spend( TICK );
-			}
-			return true;
-		}
-
 		@Override
 		public void detach() {
 			super.detach();
@@ -255,15 +244,8 @@ public class CapeOfThorns extends Artifact {
 			return reduction;
 		}
 
-		/**叠加诅咒削减量并延长持续时间。首次施加为 6 回合，后续每次延长 3 回合。*/
 		public void extend( int amount ) {
 			reduction += amount;
-			if (left <= 0) {
-				left = 6;
-				spend( TICK );
-			} else {
-				left += 3;
-			}
 		}
 
 		@Override
@@ -277,35 +259,27 @@ public class CapeOfThorns extends Artifact {
 		}
 
 		@Override
-		public String iconTextDisplay() {
-			return Integer.toString( left );
-		}
-
-		@Override
-		public String toString() {
-			return Messages.get( this, "name" );
-		}
-
-		@Override
 		public String desc() {
-			return Messages.get( this, "desc", reduction, left );
+			return Messages.get( this, "desc", reduction, (int) visualcooldown() );
 		}
-
 		private static final String REDUCTION = "reduction";
-		private static final String LEFT = "left";
 
 		@Override
 		public void storeInBundle( Bundle bundle ) {
 			super.storeInBundle( bundle );
 			bundle.put( REDUCTION, reduction );
-			bundle.put( LEFT, left );
 		}
 
 		@Override
 		public void restoreFromBundle( Bundle bundle ) {
 			super.restoreFromBundle( bundle );
 			reduction = bundle.getInt( REDUCTION );
-			left = bundle.getInt( LEFT );
+		}
+
+		@Override
+		public void onDeath() {
+			Dungeon.fail( getClass() );
+			GLog.n( Messages.get(this, "onDeath") );
 		}
 	}
 

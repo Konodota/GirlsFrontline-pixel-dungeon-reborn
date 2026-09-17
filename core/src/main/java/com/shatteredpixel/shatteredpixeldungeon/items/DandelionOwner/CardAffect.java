@@ -183,7 +183,10 @@ public class CardAffect {
     }
     private static void addThrowing(){
         GLog.p(Messages.get(CardAffect.class, "throwing_charged"));
-        M4A1.INSTANCE().throwing_ready = true;
+        if (M4A1.INSTANCE().throwing_ready)
+            M4A1.INSTANCE().lateThrowingReady = true;
+        else
+            M4A1.INSTANCE().throwing_ready = true;
     }
     private static void addIntensify(){
         GLog.p(Messages.get(CardAffect.class, "intensify_charged"));
