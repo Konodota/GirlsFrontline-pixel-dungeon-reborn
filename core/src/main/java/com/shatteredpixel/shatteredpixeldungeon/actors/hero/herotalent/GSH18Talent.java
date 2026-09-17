@@ -60,24 +60,69 @@ public final class GSH18Talent {
 
 	// ===================== 生命周期钩子（供调用方统一委托） =====================
 
-	/** 进食后：疗养一餐、元气一餐 */
+	/** 进食后：疗养一餐（回生命/星之护盾）、元气一餐（必中+攻击范围增益） */
 	public static void onFoodEaten( Hero hero ){
-		mealTreatment(hero);
+		// T1 疗养一餐：+1 进食回2点生命；+2 进食额外获得2点星之护盾
+		if (hero.hasTalent(Talent.GSH18_MEAL_TREATMENT)){
+			// +1:进食恢复2点生命
+			hero.HP = Math.min(hero.HP + 2, hero.HT);
+			if (hero.sprite != null) {
+				Emitter e = hero.sprite.emitter();
+				if (e != null) e.burst(Speck.factory(Speck.HEALING), 2);
+			}
+			// +2:进食获得2点星之护盾值
+			if (hero.pointsInTalent(Talent.GSH18_MEAL_TREATMENT) >= 2) {
+				StarShield starShield = hero.buff(StarShield.class);
+				if (starShield == null) {
+					starShield = Buff.affect(hero, StarShield.class);
+				}
+				starShield.incShield(2);
+				if (hero.sprite != null) {
+					hero.sprite.centerEmitter().burst(MagicMissile.WardParticle.FACTORY, 2);
+				}
+			}
+		}
+		// 元气一餐：进食后添加buff，跟踪下次攻击必定命中和增加攻击范围
 		if (hero.hasTalent(Talent.GSH18_ENERGIZING_MEAL)){
-			// 进食后添加buff，用于跟踪下次攻击必定命中和增加攻击范围
 			Buff.affect(hero, Talent.GSH18EnergizingMealTracker.class);
 		}
 	}
 
-	/** 使用药水后：医护兼容 */
+	/** 使用药水后：医护兼容（增益治疗药水把治疗量按比例转化为星之护盾） */
 	public static void onPotionUsed( Hero hero, float mul ){
-		medicalCompatibility(hero, mul);
+		// T2 医护兼容：使用增益治疗药水（mul==1.25）时，把治疗量的20%/50%转化为星之护盾
+		if (mul == 1.25F && hero.hasTalent(Talent.GSH18_MEDICAL_COMPATIBILITY)){
+			StarShield starShield = Buff.affect(hero, StarShield.class);
+			int healAmount = PotionOfHealing.getHealAmount(hero.HT);
+			float shieldPercent = -0.1f + 0.3f * hero.pointsInTalent(Talent.GSH18_MEDICAL_COMPATIBILITY);
+			starShield.incShield(Math.round(healAmount * shieldPercent));
+			if (hero.sprite != null) {
+				hero.sprite.centerEmitter().burst(MagicMissile.WardParticle.FACTORY, 2);
+			}
+		}
 	}
 
 	/** 攻击命中后：锁链冲击溅射、双星守护回盾 */
 	public static void onAttackProc( Hero hero, Char enemy, int dmg ){
+		// T2 锁链冲击（同时被天狼星心脏附加伤害复用，故保留为独立 public 方法）
 		chainShock(hero, enemy, dmg);
-		twinStarGuard(hero);
+
+		// T1 双星守护：攻击命中回复星之护盾，每回合上限 +1为5点、+2为10点（非GSH18减半）
+		if (hero.hasTalent(Talent.GSH18_STAR_SHIELD)){
+			Talent.StarShieldTracker tracker = Buff.affect(hero, Talent.StarShieldTracker.class);
+			int shieldPerHit = hero.pointsInTalent(Talent.GSH18_STAR_SHIELD); // +1回1点，+2回2点
+			int maxPerTurn = 5 * shieldPerHit; // +1每回合最多5点，+2每回合最多10点
+			if (hero.heroClass != HeroClass.GSH18){
+				maxPerTurn /= 2; // 非GSH18角色上限减半
+			}
+			if (tracker.count() < maxPerTurn) {
+				Buff.affect(hero, StarShield.class).incShield(shieldPerHit);
+				tracker.countUp(shieldPerHit);
+				if (hero.sprite != null){
+					hero.sprite.centerEmitter().burst(MagicMissile.WardParticle.FACTORY, 2);
+				}
+			}
+		}
 	}
 
 	/** 攻击命中结算后：消耗元气一餐增益 */
@@ -88,10 +133,23 @@ public final class GSH18Talent {
 		}
 	}
 
-	/** 获得护盾时：情报感知、敏捷移动触发 */
+	/** 获得护盾时：情报感知（心灵视野）、敏捷移动（闪避增益）触发 */
 	public static void onShielding( Hero hero ){
-		intelligenceAwareness(hero);
-		agileMovementOnShielding(hero);
+		// T3 情报感知：获得护盾时触发（冷却125/100/75回合），给予1回合心灵视野（距离2/5/8格）
+		if (hero.hasTalent(Talent.GSH18_INTELLIGENCE_AWARENESS)
+				&& hero.buff(Talent.IntelligenceAwarenessCooldown.class) == null){
+			float cooldownTurns = 125.0f - 25.0f * hero.pointsInTalent(Talent.GSH18_INTELLIGENCE_AWARENESS);
+			Buff.affect(hero, Talent.IntelligenceAwarenessCooldown.class, cooldownTurns);
+			int distance = -1 + 3 * hero.pointsInTalent(Talent.GSH18_INTELLIGENCE_AWARENESS);
+			Buff.affect(hero, MindVision.class, 1.0f).distance = distance;
+		}
+
+		// T3 敏捷移动：获得护盾时触发（50回合冷却），挂1回合闪避增益
+		if (hero.hasTalent(Talent.GSH18_AGILE_MOVEMENT)
+				&& hero.buff(Talent.AgileMovementCooldown.class) == null){
+			Buff.affect(hero, Talent.AgileMovementCooldown.class, 50.0f);
+			Buff.affect(hero, Talent.AgileMovement.class, 1.0f);
+		}
 	}
 
 	/** 命中乘数：短线作战（攻击相邻敌人时命中 +20%/+45%），不满足返回1 */
@@ -226,37 +284,11 @@ public final class GSH18Talent {
 			return 0;
 		}
 		int points = hero.pointsInTalent(Talent.GSH18_COMPANION_SYNC);
-		//+3直接拉平；+1/+2最多补对应点数；钳制保证不超过主武器真实等级
-		int bonus = points >= 3 ? gap : Math.min(points, gap);
-		return Math.max(0, bonus);
+		//+3直接拉平；+1/+2最多补对应点数；min(points, gap) 保证不超过主武器真实等级（此时 gap>=1、points>=1，结果必为正）
+		return points >= 3 ? gap : Math.min(points, gap);
 	}
 
-	// ===================== 各天赋具体实现 =====================
-
-	/** T1 疗养一餐：+1 进食回2点生命；+2 进食额外获得2点星之护盾 */
-	private static void mealTreatment( Hero hero ){
-		if (!hero.hasTalent(Talent.GSH18_MEAL_TREATMENT)){
-			return;
-		}
-		// +1:进食恢复2点生命（入口 hasTalent 已保证天赋点数≥1，此处无需再判断 >=1）
-		hero.HP = Math.min(hero.HP + 2, hero.HT);
-		if (hero.sprite != null) {
-			Emitter e = hero.sprite.emitter();
-			if (e != null) e.burst(Speck.factory(Speck.HEALING), 2);
-		}
-		// +2:进食获得2点星之护盾值
-		if (hero.pointsInTalent(Talent.GSH18_MEAL_TREATMENT) >= 2) {
-			StarShield starShield = hero.buff(StarShield.class);
-			if (starShield == null) {
-				// 如果角色还没有星之护盾buff，创建一个新的
-				starShield = Buff.affect(hero, StarShield.class);
-			}
-			starShield.incShield(2);
-			if (hero.sprite != null) {
-				hero.sprite.centerEmitter().burst(MagicMissile.WardParticle.FACTORY, 2);
-			}
-		}
-	}
+	// ===================== 锁链冲击（被主武器命中与天狼星心脏附加伤害复用） =====================
 
 	/**
 	 * T2 锁链冲击：以目标为中心对周围3x3范围的非友方单位造成基于本次伤害的溅射。
@@ -307,70 +339,6 @@ public final class GSH18Talent {
 					}
 				}
 			}
-		}
-	}
-
-	/** T1 双星守护：攻击命中回复星之护盾，每回合上限 +1为5点、+2为10点（非GSH18减半） */
-	private static void twinStarGuard( Hero hero ){
-		if (!hero.hasTalent(Talent.GSH18_STAR_SHIELD)){
-			return;
-		}
-		Talent.StarShieldTracker tracker = Buff.affect(hero, Talent.StarShieldTracker.class);
-		int shieldPerHit = hero.pointsInTalent(Talent.GSH18_STAR_SHIELD); // +1回1点，+2回2点
-
-		// 如果是GSH18，正常上限；否则，上限减半
-		int maxPerTurn = 5 * hero.pointsInTalent(Talent.GSH18_STAR_SHIELD); // +1每回合最多5点，+2每回合最多10点
-		if (hero.heroClass != HeroClass.GSH18){
-			maxPerTurn /= 2; // 非GSH18角色上限减半
-		}
-
-		if (tracker.count() < maxPerTurn) {
-			Buff.affect(hero, StarShield.class).incShield(shieldPerHit);
-			tracker.countUp(shieldPerHit);
-			if (hero.sprite != null){
-				hero.sprite.centerEmitter().burst(MagicMissile.WardParticle.FACTORY, 2);
-			}
-		}
-	}
-
-	/** T2 医护兼容：使用增益治疗药水（mul==1.25）时，把治疗量的20%/50%转化为星之护盾 */
-	private static void medicalCompatibility( Hero hero, float mul ){
-		if (mul == 1.25F && hero.hasTalent(Talent.GSH18_MEDICAL_COMPATIBILITY)){
-			StarShield starShield = Buff.affect(hero, StarShield.class);
-			// 计算应回复的护盾层数：治疗药水恢复量的20%/50%
-			int healAmount = PotionOfHealing.getHealAmount(hero.HT);
-			float shieldPercent = -0.1f + 0.3f * hero.pointsInTalent(Talent.GSH18_MEDICAL_COMPATIBILITY);
-			int shieldToAdd = Math.round(healAmount * shieldPercent);
-			starShield.incShield(shieldToAdd);
-			if (hero.sprite != null) {
-				hero.sprite.centerEmitter().burst(MagicMissile.WardParticle.FACTORY, 2);
-			}
-		}
-	}
-
-	/** T3 情报感知：获得护盾时触发（冷却100/75/50回合），给予1回合心灵视野（距离2/5/8格） */
-	private static void intelligenceAwareness( Hero hero ){
-		if (!hero.hasTalent(Talent.GSH18_INTELLIGENCE_AWARENESS)){
-			return;
-		}
-		Talent.IntelligenceAwarenessCooldown cooldownBuff = hero.buff(Talent.IntelligenceAwarenessCooldown.class);
-		if (cooldownBuff == null){
-			float cooldownTurns = 125.0f - 25.0f * hero.pointsInTalent(Talent.GSH18_INTELLIGENCE_AWARENESS);
-			Buff.affect(hero, Talent.IntelligenceAwarenessCooldown.class, cooldownTurns);
-			int distance = -1 + 3 * hero.pointsInTalent(Talent.GSH18_INTELLIGENCE_AWARENESS);
-			Buff.affect(hero, MindVision.class, 1.0f).distance = distance;
-		}
-	}
-
-	/** T3 敏捷移动：获得护盾时触发（50回合冷却），挂1回合闪避增益 */
-	private static void agileMovementOnShielding( Hero hero ){
-		if (!hero.hasTalent(Talent.GSH18_AGILE_MOVEMENT)){
-			return;
-		}
-		Talent.AgileMovementCooldown cooldownBuff = hero.buff(Talent.AgileMovementCooldown.class);
-		if (cooldownBuff == null){
-			Buff.affect(hero, Talent.AgileMovementCooldown.class, 50.0f);
-			Buff.affect(hero, Talent.AgileMovement.class, 1.0f);
 		}
 	}
 }

@@ -69,7 +69,7 @@ public final class RogueTalent {
 		else if (talent == Talent.THIEFS_INTUITION && hero.pointsInTalent(Talent.THIEFS_INTUITION) == 2){
 			if (hero.belongings.ring != null) hero.belongings.ring.identify();
 			if (hero.belongings.misc instanceof Ring) hero.belongings.misc.identify();
-			for (Item item : Dungeon.hero.belongings)
+			for (Item item : hero.belongings)
 				if (item instanceof Ring)
 					((Ring) item).setKnown();
 		}
@@ -80,7 +80,7 @@ public final class RogueTalent {
 		else if (talent == Talent.LIGHT_CLOAK && hero.pointsInTalent(Talent.LIGHT_CLOAK) == 1){
 			Item cloak = hero.belongings.getItem(CloakOfShadows.class);
 			if (cloak != null)
-				((CloakOfShadows) cloak).activate(Dungeon.hero);
+				((CloakOfShadows) cloak).activate(hero);
 		}
 		else if (talent == Talent.PROTECTIVE_SHADOWS && hero.invisible > 0)
 			Buff.affect(hero, Talent.ProtectiveShadowsTracker.class);

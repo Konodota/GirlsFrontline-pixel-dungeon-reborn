@@ -28,7 +28,9 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.WandEmpower;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.mage.WildMagic;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Artifact;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TalismanOfForesight;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfRecharging;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
@@ -188,9 +190,9 @@ public final class MageTalent {
 	public static void mysticalChargeArtifacts( Hero hero ){
 		if (!hero.hasTalent(Talent.MYSTICAL_CHARGE)) return;
 		for (Buff b : hero.buffs()){
-			if (b instanceof com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Artifact.ArtifactBuff) {
-				if (!((com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Artifact.ArtifactBuff) b).isCursed()) {
-					((com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Artifact.ArtifactBuff) b).charge(hero, 0.5f * hero.pointsInTalent(Talent.MYSTICAL_CHARGE));
+			if (b instanceof Artifact.ArtifactBuff) {
+				if (!((Artifact.ArtifactBuff) b).isCursed()) {
+					((Artifact.ArtifactBuff) b).charge(hero, 0.5f * hero.pointsInTalent(Talent.MYSTICAL_CHARGE));
 				}
 			}
 		}
@@ -241,7 +243,7 @@ public final class MageTalent {
 
 	/** 野性魔力T4：强化期间法杖等级的额外提升 */
 	public static int wildMagicBonusLevel( Hero hero, int level ){
-		if (hero.buff(com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.mage.WildMagic.WildMagicTracker.class) != null){
+		if (hero.buff(WildMagic.WildMagicTracker.class) != null){
 			int bonus = 2 + hero.pointsInTalent(Talent.WILD_POWER);
 			if (Random.Int(2) == 0) bonus++;
 			bonus /= 2; // +1/+1.5/+2/+2.5/+3 at 0/1/2/3/4 talent points

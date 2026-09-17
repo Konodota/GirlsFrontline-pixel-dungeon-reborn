@@ -18,8 +18,11 @@ public class Core_Calling extends Buff {
     private LinkedList<Dummy_Core> cores = new LinkedList<>();
     private final LinkedList<Integer> callingTimes = new LinkedList<>();
     public void addCore(Dummy_Core core){
+        addCore(core, 0);
+    }
+    public void addCore(Dummy_Core core, float delay) {
         cores.add(core);
-        callingTimes.add(5);
+        callingTimes.add(5 + (int) delay);
     }
     @Override
     public boolean act(){

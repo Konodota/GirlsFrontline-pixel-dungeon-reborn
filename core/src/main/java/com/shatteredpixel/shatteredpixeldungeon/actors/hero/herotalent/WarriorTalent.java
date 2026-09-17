@@ -22,7 +22,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent;
 
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
-import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Barrier;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Berserk;
@@ -32,7 +31,6 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.ShieldBuff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
-import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.items.BrokenSeal;
@@ -68,8 +66,10 @@ public final class WarriorTalent {
 	public static void onTalentUpgraded( Hero hero, Talent talent ){
 		if (talent == Talent.ARMSMASTERS_INTUITION && hero.pointsInTalent(Talent.ARMSMASTERS_INTUITION) == 2){
 			if (hero.belongings.weapon() != null) hero.belongings.weapon().identify();
-			if (hero.belongings.armor() != null)  hero.belongings.armor.identify();
-			if (hero.belongings.SecondArmor() != null)  hero.belongings.secArmor.identify();
+			if (hero.belongings.armor() != null) {
+				hero.belongings.armor.identify();
+				if (hero.belongings.armor.inside != null) hero.belongings.armor.inside.identify();
+			}
 		}
 		else if (talent == Talent.STRONGMAN){
 			int times ;
@@ -239,14 +239,6 @@ public final class WarriorTalent {
 		return tier * (1 + hero.pointsInTalent(Talent.HOLD_FAST));
 	}
 
-	/**
-	 * 装备新护甲时是否走“旧护甲逻辑”（直接替换主护甲）。
-	 * 没有坚守天赋、或新护甲阶数不高于现主护甲时沿用旧逻辑。
-	 */
-	public static boolean useLegacyArmorEquip( Hero hero, int newTier ){
-		return hero.belongings.armor().tier() <= newTier || !hero.hasTalent(Talent.HOLD_FAST);
-	}
-
 	// ===================== 坚韧意志（IRON_WILL）战士护盾 =====================
 
 	/** 坚韧意志：战士护盾最大层数 += 天赋点 */
@@ -279,16 +271,11 @@ public final class WarriorTalent {
 
 	/** 能否把当前刻印转移到另一件护甲 */
 	public static boolean canTransferGlyph( Hero hero, boolean hasGlyph, boolean glyphCommonOrUncommon ){
-		if (hero.hasTalentA(Talent.RUNIC_TRANSFERENCE)){
-			if (!hasGlyph){
-				return false;
-			} else if (hero.pointsInTalent(Talent.RUNIC_TRANSFERENCE) >= 1){
-				return true;
-			} else {
-				return hero.pointsInTalent(Talent.RUNIC_TRANSFERENCE) == 0 && glyphCommonOrUncommon;
-			}
+		if (!hero.hasTalentA(Talent.RUNIC_TRANSFERENCE) || !hasGlyph){
+			return false;
 		}
-		return false;
+		//+1/+2时任意稀有度均可转移；+0（天赋在表但尚未投入点数）时仅普通/罕见刻印可转移
+		return hero.pointsInTalent(Talent.RUNIC_TRANSFERENCE) >= 1 || glyphCommonOrUncommon;
 	}
 
 	/** 符文转移+2：允许直接抽取刻印 */

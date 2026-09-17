@@ -24,6 +24,7 @@ public abstract class Dummy_Core extends Item {
         stackable = true;
     }
     private static final String AC_FIX = "fix";
+    private static final String AC_FIX_ALL = "fixAll";
     private static final String AC_CALL = "call";
     protected int fixTimeNeed = 0;
     public float htMul = 0.1F;
@@ -65,8 +66,11 @@ public abstract class Dummy_Core extends Item {
         ArrayList<String> actions = super.actions(hero);
         if (fixTimeNeed <= 0)
             actions.add(AC_CALL);
-        else
+        else {
             actions.add(AC_FIX);
+            if (fixTimeNeed > 1)
+                actions.add(AC_FIX_ALL);
+        }
         return actions;
     }
     @Override
@@ -75,9 +79,17 @@ public abstract class Dummy_Core extends Item {
         if (action.equals(AC_FIX)){
             Dummy_Core core = (Dummy_Core) detach(hero.belongings.backpack);
             core.fixTimeNeed--;
-            if (!core.collect())
+            if (core.collect())
+                Dungeon.quickslot.resetSlot(this, core);
+            else
                 Dungeon.level.drop(core, hero.pos);
             hero.spendAndNext(1F);
+        }
+        else if (action.equals(AC_FIX_ALL)) {
+            Dummy_Core core = (Dummy_Core) detach(hero.belongings.backpack);
+            core.fixTimeNeed = 0;
+            hero.spend(fixTimeNeed);
+            Buff.affect(hero, Core_Calling.class).addCore(core, hero.cooldown());
         }
         else if (action.equals(AC_CALL))
             Buff.affect(hero, Core_Calling.class).addCore((Dummy_Core) detach(hero.belongings.backpack));

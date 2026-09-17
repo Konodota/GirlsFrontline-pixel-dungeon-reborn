@@ -1899,12 +1899,15 @@ public class Hero extends Char {
 
 		return true;
 	}
-	
+	public static int expGain(Hero hero, int exp) {
+		Commander.Command command = hero.buff(Commander.Command.class);
+		if (command != null && command.count()>0)
+			exp *= 2;
+		return (int) (exp * Type561Talent.expMultiplier(hero));
+	}
 	public void earnExp( int exp, Class source ) {
-        Commander.Command command = buff(Commander.Command.class);
-        if (command != null && command.count()>0)
-            exp *= 2;
-		this.exp += (int) (exp * Type561Talent.expMultiplier(this));
+		exp = expGain(this, exp);
+		this.exp += exp;
 
 		float percent = exp/(float)maxExp();
 
@@ -1935,9 +1938,10 @@ public class Hero extends Char {
 		}
 
 		boolean levelUp = false;
+		Commander.Command command = buff(Commander.Command.class);
 		while (this.exp >= maxExp()) {
 			this.exp -= maxExp();
-            if (command != null && command.count()>0)
+            if (command != null && command.count() > 0)
                 command.countDown(1);
             // 法师（G11）法杖保留+2：升级时消耗一层计数（实现见 MageTalent）
             MageTalent.onHeroLevelUp(this);

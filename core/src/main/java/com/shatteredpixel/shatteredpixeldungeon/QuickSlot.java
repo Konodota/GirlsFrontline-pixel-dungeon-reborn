@@ -115,7 +115,11 @@ public class QuickSlot {
 				return i;
 		return -1;
 	}
-
+	public void resetSlot(Item old, Item newItem) {
+		for (int i = 0; i < SIZE; i++)
+			if (getItem(i) == old)
+				setSlot(i, newItem);
+	}
 	public Boolean isPlaceholder(int slot){
 		return getItem(slot) != null && getItem(slot).quantity() == 0;
 	}

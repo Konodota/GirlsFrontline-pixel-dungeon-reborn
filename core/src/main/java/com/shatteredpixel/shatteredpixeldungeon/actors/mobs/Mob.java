@@ -714,7 +714,7 @@ public abstract class Mob extends Char {
 				Bestiary.countEncounter(getClass());
 				int exp = Dungeon.hero.lvl <= maxLvl ? EXP : 0;
 				if (exp > 0) {
-					Dungeon.hero.sprite.showStatus(CharSprite.POSITIVE, Messages.get(this, "exp", exp));
+					Dungeon.hero.sprite.showStatus(CharSprite.POSITIVE, Messages.get(this, "exp", Hero.expGain(Dungeon.hero, exp)));
 				}
 				Dungeon.hero.earnExp(exp, getClass());
 			}

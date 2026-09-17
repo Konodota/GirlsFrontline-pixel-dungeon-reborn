@@ -21,10 +21,12 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent;
 
+import com.shatteredpixel.shatteredpixeldungeon.Challenges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Cripple;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.EquipLevelUp;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Hunger;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MindVision;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.TalentSecondSight;
@@ -36,8 +38,11 @@ import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.RedBook;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TalismanOfForesight;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.ShootGun;
+import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.utils.Random;
@@ -69,7 +74,7 @@ public final class Type561Talent {
 			else                                           Buff.count(hero, Talent.ZongziDropped.class, 2);
 		}
 		else if (talent == Talent.Type56One_Identify && hero.pointsInTalent(Talent.Type56One_Identify) == 2){
-			for (Item item : Dungeon.hero.belongings)
+			for (Item item : hero.belongings)
 				if (item instanceof MeleeWeapon || item instanceof Armor){
 					item.cursedKnown = true;
 					Item.updateQuickslot();
@@ -77,27 +82,28 @@ public final class Type561Talent {
 		}
 		else if (talent == Talent.Type56Three_Book && hero.pointsInTalent(Talent.Type56Three_Book) == 1){
 			if ((workingItem = hero.belongings.getItem(RedBook.class)) != null)
-				((RedBook) workingItem).activate(Dungeon.hero);
+				((RedBook) workingItem).activate(hero);
 		}
 		else if (talent == Talent.Type56Two_Sight){
-			Buff.affect( Dungeon.hero, TalentSecondSight.class).Set(Dungeon.levelId, 0);
-			if (Dungeon.hero.pointsInTalent(Talent.Type56Two_Sight) == 1){
+			Buff.affect( hero, TalentSecondSight.class).Set(Dungeon.levelId, 0);
+			if (hero.pointsInTalent(Talent.Type56Two_Sight) == 1){
 				Dungeon.level.FirstSight = false;
-				Buff.affect(Dungeon.hero, MindVision.class, 3);
-			}else if (Dungeon.hero.pointsInTalent(Talent.Type56Two_Sight) == 2) {
+				Buff.affect(hero, MindVision.class, 3);
+			}else if (hero.pointsInTalent(Talent.Type56Two_Sight) == 2) {
 				Dungeon.level.SecondSight = false;
-				Buff.affect(Dungeon.hero, MindVision.class, 3);
+				Buff.affect(hero, MindVision.class, 3);
 			}
+			Dungeon.observe();
 		}
 	}
 
 	/** 进食后：饭饱为钢（旧版T2）回血 */
 	public static void onFoodEaten( Hero hero ){
-		if (Dungeon.hero.hasTalent(Talent.Type56_21V2)){
-			if (Dungeon.hero.HP < Dungeon.hero.HT) {
-				int add = (int) (Dungeon.hero.HT*(0.02*Dungeon.hero.pointsInTalent(Talent.Type56_21V2)+0.01F));
-				Dungeon.hero.HP = Math.min( Dungeon.hero.HP + add, Dungeon.hero.HT );
-				Dungeon.hero.sprite.emitter().burst( Speck.factory( Speck.HEALING ), 1 );
+		if (hero.hasTalent(Talent.Type56_21V2)){
+			if (hero.HP < hero.HT) {
+				int add = (int) (hero.HT*(0.02*hero.pointsInTalent(Talent.Type56_21V2)+0.01F));
+				hero.HP = Math.min( hero.HP + add, hero.HT );
+				hero.sprite.emitter().burst( Speck.factory( Speck.HEALING ), 1 );
 			}
 		}
 	}
@@ -116,7 +122,7 @@ public final class Type561Talent {
 
 	/** 装备物品后：战场老兵（旧版）立即鉴定武器 */
 	public static void onItemEquipped( Hero hero, Item item ){
-		if (hero.pointsInTalent(Talent.OLD_SOLDIER) == 2 && item instanceof com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon)
+		if (hero.pointsInTalent(Talent.OLD_SOLDIER) == 2 && item instanceof Weapon)
 			item.identify();
 	}
 
@@ -185,7 +191,7 @@ public final class Type561Talent {
 	/** 被攻击后：夜战精英+2（旧版）令攻击者获得视野追踪 */
 	public static int onDefenceProc( Hero hero, Char enemy, int dmg ){
 		if(hero.pointsInTalent(Talent.NIGHT_EXPERT)>=2)
-			Buff.append(enemy, com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TalismanOfForesight.CharAwareness.class,2f).charID = enemy.id();
+			Buff.append(enemy, TalismanOfForesight.CharAwareness.class,2f).charID = enemy.id();
 		return dmg;
 	}
 
@@ -228,29 +234,25 @@ public final class Type561Talent {
 	/** 视野距离加成：夜战精英（旧版T2）在黑暗层视野+1 */
 	public static int viewDistanceBonus( Hero hero ){
 		if (hero.hasTalent(Talent.NIGHT_EXPERT)
-				&& (Dungeon.level.feeling == com.shatteredpixel.shatteredpixeldungeon.levels.Level.Feeling.DARK
-				|| Dungeon.isChallenged(com.shatteredpixel.shatteredpixeldungeon.Challenges.DARKNESS)))
+				&& (Dungeon.level.feeling == Level.Feeling.DARK
+				|| Dungeon.isChallenged(Challenges.DARKNESS)))
 			return 1;
 		return 0;
 	}
 
 	/** 武器有效等级加成：火线补给T4-2电解糖分（EquipLevelUp期间） */
 	public static int weaponLevelBonus( Hero hero ){
-		if (hero.buff(com.shatteredpixel.shatteredpixeldungeon.actors.buffs.EquipLevelUp.class) != null
-				&& hero.hasTalent(Talent.Type56FourTwoTwo)){
-			return hero.pointsInTalent(Talent.Type56FourTwoTwo);
+		if (hero.buff(EquipLevelUp.class) == null){
+			return 0;
 		}
-		//无天赋时默认+1（EquipLevelUp基础效果）
-		if (hero.buff(com.shatteredpixel.shatteredpixeldungeon.actors.buffs.EquipLevelUp.class) != null){
-			return 1;
-		}
-		return 0;
+		// 拥有火线补给T4-2天赋时按天赋点加成；无天赋时默认+1（EquipLevelUp基础效果）
+		return Math.max(hero.pointsInTalent(Talent.Type56FourTwoTwo), 1);
 	}
 
 	/** 护甲有效等级加成：火线补给T4-2电解糖分 + 饭饱为钢 + 饱腹护甲（旧版） */
 	public static int armorLevelBonus( Hero hero, int baseLevel ){
 		int level = baseLevel;
-		if (hero.buff(com.shatteredpixel.shatteredpixeldungeon.actors.buffs.EquipLevelUp.class) != null) {
+		if (hero.buff(EquipLevelUp.class) != null) {
 			level += 1 + hero.pointsInTalent(Talent.Type56FourTwoTwo);
 		}
 		Hunger hunger = hero.buff(Hunger.class);
