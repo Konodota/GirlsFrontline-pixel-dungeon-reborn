@@ -25,6 +25,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Chrome;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Languages;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
+import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Archs;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Button;
@@ -73,7 +74,18 @@ public class ChangesScene extends PixelScene {
 		btnExit.setPos( Camera.main.width - btnExit.width(), 0 );
 		add( btnExit );
 
-		NinePatch panel = Chrome.get(Chrome.Type.TOAST);
+		//窗口贴图随状态面板风格切换：第二套(style=1)使用 ZeroshopUI (16,16) 的新窗口框
+		//（白边+金色角饰+深色渐变底，3px 九宫格边距固定角饰）；
+		//第一套(style=0)与第三套(style=2)沿用破碎地牢原版 TOAST 窗口
+		NinePatch panel;
+		switch (SPDSettings.statusPaneStyle()) {
+			case 1:
+				panel = new NinePatch(Assets.Interfaces.ZEROSHOP_UI, 16, 16, 16, 16, 3);
+				break;
+			default:
+				panel = Chrome.get(Chrome.Type.TOAST);
+				break;
+		}
 
 		int pw = 135 + panel.marginLeft() + panel.marginRight() - 2;
 		int ph = h - 36;
@@ -123,6 +135,13 @@ public class ChangesScene extends PixelScene {
 		boolean second = false;
 		for (ChangeInfo info : changeInfos){
 			if (info.major) {
+				posY = nextPosY;
+				second = false;
+				info.setRect(0, posY, panel.innerWidth(), 0);
+				content.add(info);
+				posY = nextPosY = info.bottom();
+			} else if (info.fullWidth){
+				//独占整行的分类：不参与左右两列配对，直接占满面板宽度
 				posY = nextPosY;
 				second = false;
 				info.setRect(0, posY, panel.innerWidth(), 0);

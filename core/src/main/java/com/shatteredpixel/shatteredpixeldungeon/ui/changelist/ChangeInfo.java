@@ -34,6 +34,8 @@ public class ChangeInfo extends Component {
 	
 	private RenderedTextBlock title;
 	public boolean major;
+	//独占整行：不参与更新日志的左右两列配对布局（该版本下只有一个分类时使用）
+	public boolean fullWidth = false;
 	
 	private RenderedTextBlock text;
 	
@@ -142,6 +144,11 @@ public class ChangeInfo extends Component {
 			line.size(width(), 1);
 			line.x = x;
 			line.y = y+2;
+		} else if (fullWidth){
+			//独占整行时不画左右列分隔竖线，改为顶部横线作为区块分隔
+			line.size(width(), 1);
+			line.x = x;
+			line.y = y;
 		} else if (x == 0){
 			line.size(1, height());
 			line.x = width;

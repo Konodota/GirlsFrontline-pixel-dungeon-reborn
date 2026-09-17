@@ -101,6 +101,14 @@ public class RenderedTextBlock extends Component {
 		}
 		text = fullText.toString();
 
+		//手动分词路径不经过 text()，需像 text() 一样先铺好分段长度/颜色表，
+		//否则 build() 首次执行 textLength.get(0) 会抛 IndexOutOfBoundsException
+		//（设置-语言页 credits 按钮在英文下崩溃的根因：该语言的 reviewers/translators 为空）
+		textLength.clear();
+		colorList.clear();
+		textLength.add(Integer.MAX_VALUE);
+		colorList.add(hightlightColor);
+
 		tokens = words;
 		build();
 	}

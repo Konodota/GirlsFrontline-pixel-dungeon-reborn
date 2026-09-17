@@ -252,7 +252,7 @@ public enum Talent {
 	}
 	public static class GSH18EnergizingMealTracker extends Buff{}
     
-    //天狼星心脏 buff
+    //蓄能星击 buff（天狼星心脏天赋激活后挂在角色身上的子buff，下次攻击时结算快照伤害）
     public static class SiriusHeartTracker extends Buff {
         {
             // 设置为不会随时间自然消失，只在攻击后被移除
@@ -276,8 +276,7 @@ public enum Talent {
             bonusDamage = bundle.getInt(BONUS_DAMAGE);
         }
 
-        public int icon() { return BuffIndicator.MOMENTUM; }
-        public void tintIcon(Image icon) { icon.hardlight(0.8f, 0.2f, 0.8f); }
+        public int icon() { return BuffIndicator.CHARGED_STAR_STRIKE; }
         public String toString() { return Messages.get(this, "name"); }
         public String desc() { return Messages.get(this, "desc"); }
     }

@@ -35,7 +35,7 @@ public class P90FullAuto extends FlavourBuff {
 
 	@Override
 	public int icon() {
-		return BuffIndicator.WEAPON;
+		return BuffIndicator.P90_FULL_AUTO;
 	}
 
 	@Override

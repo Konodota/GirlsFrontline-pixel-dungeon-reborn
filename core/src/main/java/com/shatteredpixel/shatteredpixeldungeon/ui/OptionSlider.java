@@ -111,6 +111,12 @@ public abstract class OptionSlider extends Component {
 			@Override
 			protected void onPointerDown( PointerEvent event ) {
 				pressed = true;
+				//只有一个可选值时节点固定不动
+				if (maxVal == minVal){
+					sliderNode.x = sliderBG.x;
+					sliderNode.brightness(1.5f);
+					return;
+				}
 				PointF p = camera().screenToCamera((int) event.current.x, (int) event.current.y);
 				sliderNode.x = GameMath.gate(sliderBG.x-2, p.x - sliderNode.width()/2, sliderBG.x+sliderBG.width()-2);
 				sliderNode.brightness(1.5f);
@@ -119,6 +125,15 @@ public abstract class OptionSlider extends Component {
 			@Override
 			protected void onPointerUp( PointerEvent event ) {
 				if (pressed) {
+					//只有一个可选值时保持节点位置并直接触发回调
+					if (maxVal == minVal){
+						selectedVal = minVal;
+						sliderNode.x = sliderBG.x;
+						sliderNode.resetColor();
+						onChange();
+						pressed = false;
+						return;
+					}
 					PointF p = camera().screenToCamera((int) event.current.x, (int) event.current.y);
 					sliderNode.x = GameMath.gate(sliderBG.x - 2, p.x - sliderNode.width()/2, sliderBG.x + sliderBG.width() - 2);
 					sliderNode.resetColor();
@@ -135,6 +150,10 @@ public abstract class OptionSlider extends Component {
 			@Override
 			protected void onDrag( PointerEvent event ) {
 				if (pressed) {
+					if (maxVal == minVal){
+						sliderNode.x = sliderBG.x;
+						return;
+					}
 					PointF p = camera().screenToCamera((int) event.current.x, (int) event.current.y);
 					sliderNode.x = GameMath.gate(sliderBG.x - 2, p.x - sliderNode.width()/2, sliderBG.x + sliderBG.width() - 2);
 				}
@@ -154,7 +173,8 @@ public abstract class OptionSlider extends Component {
 		sliderBG.y = y + height() - 8;
 		sliderBG.x = x+2;
 		sliderBG.size(width-5, 1);
-		tickDist = sliderBG.width()/(maxVal - minVal);
+		//只有一个可选值时档位间距为0，节点固定在滑条起点
+		tickDist = (maxVal == minVal) ? 0 : sliderBG.width()/(maxVal - minVal);
 		for (int i = 0; i < sliderTicks.length; i++){
 			sliderTicks[i].y = sliderBG.y-5;
 			sliderTicks[i].x = x + 2 + (tickDist*i);

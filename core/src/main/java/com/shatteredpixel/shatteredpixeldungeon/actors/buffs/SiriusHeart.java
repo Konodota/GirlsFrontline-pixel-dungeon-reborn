@@ -30,10 +30,13 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
+import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ActionIndicator;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
+import com.shatteredpixel.shatteredpixeldungeon.ui.OptionSlider;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RedButton;
+import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
@@ -62,6 +65,15 @@ public class SiriusHeart extends Buff implements ActionIndicator.Action {
         }
     }
 
+    // 根据天赋等级返回可选护盾抽离档位：+1={100} / +2={60,100} / +3={40,60,80,100}
+    public static int[] extractTiersForLevel(int talentLevel) {
+        switch (talentLevel) {
+            case 2: return new int[]{60, 100};
+            case 3: return new int[]{40, 60, 80, 100};
+            default: return new int[]{100};
+        }
+    }
+
     // 检查是否可以使用技能
     public boolean canUse() {
         if (!(target instanceof Hero)) return false;
@@ -78,18 +90,31 @@ public class SiriusHeart extends Buff implements ActionIndicator.Action {
         return true;
     }
 
-    // 激活技能：立即抽离护盾并快照为附加伤害
-    public void activate() {
+    // 激活技能：按所选档位抽离部分护盾并快照为附加伤害
+    public void activate(int extractPercent) {
         if (!canUse()) return;
         
         Hero hero = (Hero) target;
         int talentLevel = hero.pointsInTalent(Talent.GSH18_SIRIUS_HEART);
 
-        // 获取当前星之护盾并立即抽离
+        // 校验抽离档位是否对当前天赋等级开放
+        boolean tierAllowed = false;
+        for (int tier : extractTiersForLevel(talentLevel)) {
+            if (tier == extractPercent) {
+                tierAllowed = true;
+                break;
+            }
+        }
+        if (!tierAllowed) return;
+
+        // 获取当前星之护盾并按档位抽离
         StarShield starShield = hero.buff(StarShield.class);
         if (starShield == null) return;
         int shieldValue = starShield.shielding();
         if (shieldValue <= 0) return;
+
+        int extracted = Math.min(shieldValue, (int) Math.ceil(shieldValue * extractPercent / 100f));
+        if (extracted <= 0) return;
 
         // 根据天赋等级计算倍率（1级20% / 2级40% / 3级100%）
         float multiplier = 0.2f;
@@ -97,20 +122,20 @@ public class SiriusHeart extends Buff implements ActionIndicator.Action {
             case 2: multiplier = 0.4f; break;
             case 3: multiplier = 1.0f; break;
         }
-        int bonusDamage = (int) Math.ceil(shieldValue * multiplier);
+        int bonusDamage = (int) Math.ceil(extracted * multiplier);
         bonusDamage = Math.max(1, bonusDamage);
 
         // 施加 tracker buff 并快照伤害
         Talent.SiriusHeartTracker tracker = Buff.affect(hero, Talent.SiriusHeartTracker.class);
         tracker.bonusDamage = bonusDamage;
 
-        // 立即抽离全部护盾
-        starShield.absorbDamage(shieldValue);
+        // 仅抽离所选护盾，未抽离部分予以保留
+        starShield.absorbDamage(extracted);
         
         // 设置冷却时间
         cooldown = 50f;
-        
-        GLog.p(Messages.get(this, "activated", bonusDamage));
+
+        // 激活时不再在左下角弹出文字提示：具体数值已在激活窗口中展示
         Sample.INSTANCE.play(Assets.Sounds.CHARGEUP);
         
         // 更新UI
@@ -255,59 +280,104 @@ public class SiriusHeart extends Buff implements ActionIndicator.Action {
 
         private static final int WIDTH = 120;
         private static final int BTN_HEIGHT = 18;
+        private static final int SLIDER_HEIGHT = 24;
         private static final float GAP = 2;
+
+        private final SiriusHeart buff;
+        private final Hero hero;
+        private final int talentLevel;
+        private final int[] tiers;
+        private int selectedPercent;
+
+        private RenderedTextBlock description;
+        private OptionSlider slider;
+        private RedButton btnActivate;
+        private RedButton btnCancel;
 
         public WndSiriusHeart(final SiriusHeart buff) {
             super();
 
-            Hero hero = (Hero) buff.target;
-            int talentLevel = hero.pointsInTalent(Talent.GSH18_SIRIUS_HEART);
+            this.buff = buff;
+            this.hero = (Hero) buff.target;
+            this.talentLevel = hero.pointsInTalent(Talent.GSH18_SIRIUS_HEART);
+            this.tiers = extractTiersForLevel(talentLevel);
+            this.selectedPercent = tiers[tiers.length - 1]; // 默认100%档位
 
-            //当前护盾值与预计附加伤害
-            StarShield shield = hero.buff(StarShield.class);
-            int shieldValue = (shield != null) ? shield.shielding() : 0;
-            int percent = (talentLevel == 1 ? 20 : (talentLevel == 2 ? 40 : 100));
-            int expectedDmg = Math.max(1, (int) Math.ceil(shieldValue * percent / 100f));
-
-            // 技能描述（冷却时间根据天赋等级：+1=180 / +2=120 / +3=60）
-            String desc = Messages.get(this, "desc",
-                    shieldValue, percent, expectedDmg, (int) cooldownForLevel(talentLevel)
-            );
-
-            // 添加描述文本
-            com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock description = new com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock(desc, 6);
+            // 描述文本（随滑条档位实时更新）
+            // 必须通过 PixelScene.renderTextBlock 创建：该分支按 defaultZoom 放大字号后再缩回，
+            // 直接 new RenderedTextBlock 会因内部 zoom=0 把字形缩放为0，导致文字完全不显示
+            description = PixelScene.renderTextBlock(6);
             description.maxWidth(WIDTH);
-            description.setSize(WIDTH, description.height());
             add(description);
 
+            // 护盾抽离比例滑条：滑条位置为档位下标，换算为对应百分比
+            slider = new OptionSlider(Messages.get(this, "regulator"),
+                    tiers[0] + "%",
+                    tiers[tiers.length - 1] + "%",
+                    0,
+                    tiers.length - 1) {
+                @Override
+                protected void onChange() {
+                    selectedPercent = tiers[getSelectedValue()];
+                    relayout();
+                }
+            };
+            slider.setSelectedValue(tiers.length - 1); // 默认定位到100%
+            add(slider);
+
             // 激活按钮
-            RedButton btnActivate = new RedButton(Messages.get(this, "activate")) {
+            btnActivate = new RedButton(Messages.get(this, "activate")) {
                 @Override
                 protected void onClick() {
                     hide();
-                    buff.activate();
+                    buff.activate(selectedPercent);
                 }
             };
-            btnActivate.setSize(WIDTH, BTN_HEIGHT);
             btnActivate.enable(buff.canUse());
             add(btnActivate);
 
             // 关闭按钮
-            RedButton btnCancel = new RedButton(Messages.get(this, "cancel")) {
+            btnCancel = new RedButton(Messages.get(this, "cancel")) {
                 @Override
                 protected void onClick() {
                     hide();
                 }
             };
-            btnCancel.setSize(WIDTH, BTN_HEIGHT);
             add(btnCancel);
 
-            // 布局
-            description.setRect(0, 0, WIDTH, description.height());
-            btnActivate.setRect(0, description.bottom() + GAP, WIDTH, BTN_HEIGHT);
+            relayout();
+        }
+
+        // 根据当前档位重新计算描述并重排全部组件
+        private void relayout() {
+            StarShield shield = hero.buff(StarShield.class);
+            int shieldValue = (shield != null) ? shield.shielding() : 0;
+            int convertPercent = (talentLevel == 1 ? 20 : (talentLevel == 2 ? 40 : 100));
+            int extracted = Math.min(shieldValue, (int) Math.ceil(shieldValue * selectedPercent / 100f));
+            int remaining = shieldValue - extracted;
+            int expectedDmg = Math.max(1, (int) Math.ceil(extracted * convertPercent / 100f));
+
+            description.text(Messages.get(this, "desc",
+                    shieldValue,
+                    selectedPercent,
+                    extracted,
+                    remaining,
+                    convertPercent,
+                    expectedDmg,
+                    (int) cooldownForLevel(talentLevel)
+            ));
+
+            float posY = 0;
+            description.setRect(0, posY, WIDTH, description.height());
+            posY = description.bottom() + GAP;
+
+            slider.setRect(0, posY, WIDTH, SLIDER_HEIGHT);
+            posY = slider.bottom() + GAP;
+
+            btnActivate.setRect(0, posY, WIDTH, BTN_HEIGHT);
             btnCancel.setRect(0, btnActivate.bottom() + GAP, WIDTH, BTN_HEIGHT);
 
-            resize(WIDTH, (int) btnCancel.bottom());
+            resize(WIDTH, (int) Math.ceil(btnCancel.bottom()));
         }
     }
 }

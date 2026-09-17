@@ -60,6 +60,7 @@ import com.shatteredpixel.shatteredpixeldungeon.journal.Document;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Journal;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Notes;
 import com.shatteredpixel.shatteredpixeldungeon.levels.RegularLevel;
+import com.shatteredpixel.shatteredpixeldungeon.levels.ZeroLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.Room;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.secret.SecretRoom;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.Trap;
@@ -85,6 +86,7 @@ import com.shatteredpixel.shatteredpixeldungeon.ui.BossHealthBar;
 import com.shatteredpixel.shatteredpixeldungeon.ui.CharHealthIndicator;
 import com.shatteredpixel.shatteredpixeldungeon.ui.GameLog;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Icons;
+import com.shatteredpixel.shatteredpixeldungeon.ui.InteractLabelButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.InventoryPane;
 import com.shatteredpixel.shatteredpixeldungeon.ui.LootIndicator;
 import com.shatteredpixel.shatteredpixeldungeon.ui.MenuPane;
@@ -197,6 +199,9 @@ public class GameScene extends PixelScene {
 	//天狼星心脏专属独立指示器，位于换枪按钮左侧，避免占位冲突
 	private ActionIndicator siriusAction;
 	private ResumeIndicator resume;
+
+	//0层前进营地专属：左上角切换可交互物块提示文字显隐的按钮
+	private InteractLabelButton labelToggle;
 
 	{
 		inGameScene = true;
@@ -383,6 +388,9 @@ public class GameScene extends PixelScene {
 		add( emitters );
 		add( effects );
 
+		//允许关卡在墙体/家具层之上添加常驻视觉（如0层可交互物块的提示文字）
+		Dungeon.level.addAboveWallVisuals( effects );
+
 		gases = new Group();
 		add( gases );
 
@@ -468,7 +476,17 @@ public class GameScene extends PixelScene {
 		}
 
 		layoutTags();
-		
+
+		//0层前进营地：在左上角状态栏下方的空白处放置交互提示文字的显隐开关
+		if (Dungeon.level instanceof ZeroLevel) {
+			labelToggle = new InteractLabelButton();
+			labelToggle.camera = uiCamera;
+			RectF labelInsets = DeviceCompat.getSafeInsets();
+			labelInsets = labelInsets.scale( 1f / uiCamera.zoom );
+			labelToggle.setPos( labelInsets.left + 2, status.bottom() + 2 );
+			add( labelToggle );
+		}
+
 		switch (InterlevelScene.mode) {
 			case RESURRECT:
 				Sample.INSTANCE.play(Assets.Sounds.TELEPORT);

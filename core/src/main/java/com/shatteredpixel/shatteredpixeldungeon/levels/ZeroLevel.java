@@ -1,6 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.levels;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.GamesInProgress;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.RatKing;
@@ -20,12 +21,17 @@ import com.shatteredpixel.shatteredpixeldungeon.GirlsFrontlinePixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Icons;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RedButton;
+import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.CustomTilemap;
+import com.shatteredpixel.shatteredpixeldungeon.tiles.DungeonTilemap;
+import com.watabou.noosa.Camera;
+import com.watabou.noosa.Game;
+import com.watabou.noosa.Group;
 import com.watabou.noosa.Tilemap;
 import com.watabou.utils.Bundle;
 
@@ -430,6 +436,69 @@ public class ZeroLevel extends Level {
             for (int i = 0; i < mapped.length; i++) {
                 mapped[i] = true;
             }
+        }
+    }
+
+    // 在墙体/家具层之上渲染可交互物块的顶部提示文字，提醒玩家相邻点击即可交互
+    @Override
+    public void addAboveWallVisuals(Group group) {
+        // 六个电脑组成的3x2控制台（水平中心7.5格，顶行为第7行）
+        group.add(new InteractableLabel(7.5f * DungeonTilemap.SIZE, 7 * DungeonTilemap.SIZE,
+                Messages.get(this, "label_computer")));
+        // 消毒通道（相邻点击进入存档）
+        group.add(new InteractableLabel(13.5f * DungeonTilemap.SIZE, 5 * DungeonTilemap.SIZE,
+                Messages.get(this, "label_decontamination")));
+        // 成就按钮
+        group.add(new InteractableLabel(11.5f * DungeonTilemap.SIZE, 2 * DungeonTilemap.SIZE,
+                Messages.get(this, "label_achievement")));
+        // 机密商店桌子（两格宽，水平中心为第2格）
+        group.add(new InteractableLabel(2f * DungeonTilemap.SIZE, 9 * DungeonTilemap.SIZE,
+                Messages.get(this, "label_blackmarket")));
+        // 通往神秘据点的传送点
+        group.add(new InteractableLabel(13.5f * DungeonTilemap.SIZE, 10 * DungeonTilemap.SIZE,
+                Messages.get(this, "label_sub_base")));
+    }
+
+    // 可交互物块顶部的常驻提示文字：黄色文字+黑色阴影，随时间轻微上下浮动
+    public static class InteractableLabel extends Group {
+
+        private static final float FONT_SIZE = 9f;
+
+        private final RenderedTextBlock shadow;
+        private final RenderedTextBlock text;
+        private final float posX;
+        private final float baseY;
+
+        // centerX、topY均为世界坐标（像素）：文字水平居中于centerX，底边位于物块顶沿上方1像素
+        InteractableLabel(float centerX, float topY, String name) {
+            text = PixelScene.renderTextBlock(name, FONT_SIZE);
+            text.hardlight(Window.TITLE_COLOR);
+
+            shadow = PixelScene.renderTextBlock(name, FONT_SIZE);
+            shadow.hardlight(0x000000);
+
+            posX = PixelScene.align(Camera.main, centerX - text.width() / 2f);
+            baseY = PixelScene.align(Camera.main, topY - text.height() - 1f);
+
+            // 阴影先添加（在下层），文字在上层
+            shadow.setPos(posX + 1f, baseY + 1f);
+            text.setPos(posX, baseY);
+            add(shadow);
+            add(text);
+        }
+
+        @Override
+        public void update() {
+            super.update();
+            // 由左上角开关（SPDSettings.zeroLevelLabels）统一控制显隐
+            visible = SPDSettings.zeroLevelLabels();
+            if (!visible) {
+                return;
+            }
+            // 轻微上下浮动（约±0.75像素，周期约2.8秒），吸引注意但不干扰画面
+            float dy = (float) Math.sin(Game.timeTotal * 2.2) * 0.75f;
+            text.setPos(posX, PixelScene.align(Camera.main, baseY + dy));
+            shadow.setPos(posX + 1f, PixelScene.align(Camera.main, baseY + 1f + dy));
         }
     }
 }

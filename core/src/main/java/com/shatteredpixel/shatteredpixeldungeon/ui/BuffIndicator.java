@@ -106,6 +106,8 @@ public class BuffIndicator extends Component {
 	public static final int STAR_SHIELD = 55;
 	public static final int SPEEDY      = 56;
 	public static final int FOOD        = 57;
+	public static final int P90_FULL_AUTO       = 60;
+	public static final int CHARGED_STAR_STRIKE = 61;
 	public static final int SIZE_SMALL  = 7;
 	public static final int SIZE_LARGE  = 16;
 	

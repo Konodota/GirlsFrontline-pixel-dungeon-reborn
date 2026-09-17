@@ -597,6 +597,10 @@ public abstract class Level implements Bundlable {
 		}
 		return visuals;
 	}
+
+	//供特殊关卡在墙体/家具层之上添加常驻的世界坐标视觉（例如可交互物块的提示文字）
+	public void addAboveWallVisuals( Group group ){
+	}
 	
 	public int mobLimit() {
 		return 0;

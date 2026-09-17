@@ -222,6 +222,8 @@ public class SPDSettings extends GameSettings {
 	public static final String KEY_FLIPTAGS 	= "flip_tags";
 	public static final String KEY_BARMODE		= "toolbar_mode";
 	public static final String KEY_STATUS_PANE_STYLE = "status_pane_style";
+	//0层前进营地：可交互物块顶部提示文字的总开关（默认显示）
+	public static final String KEY_ZERO_LEVEL_LABELS = "zero_level_labels";
 
 	//0 = mobile, 1 = mixed (large without inventory in main UI), 2 = large
 	public static void interfaceSize( int value ){
@@ -259,7 +261,16 @@ public class SPDSettings extends GameSettings {
 	}
 	
 	public static boolean flipTags(){ return getBoolean(KEY_FLIPTAGS, false); }
-	
+
+	//0层前进营地可交互物块提示文字的显示开关（默认显示）
+	public static void zeroLevelLabels( boolean value ){
+		put( KEY_ZERO_LEVEL_LABELS, value );
+	}
+
+	public static boolean zeroLevelLabels(){
+		return getBoolean( KEY_ZERO_LEVEL_LABELS, true );
+	}
+
 	public static void toolbarMode( String value ) {
 		put( KEY_BARMODE, value );
 	}

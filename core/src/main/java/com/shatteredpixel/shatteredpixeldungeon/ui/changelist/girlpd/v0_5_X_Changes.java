@@ -139,8 +139,9 @@ public class v0_5_X_Changes {
         changes.hardlight(Window.TITLE_COLOR);
         changeInfos.add(changes);
 
-        changes = new ChangeInfo(Messages.get(ChangesScene.class, "new"), false, null);
-        changes.hardlight( Window.TITLE_COLOR );
+        changes = new ChangeInfo(Messages.get(ChangesScene.class, "changes"), false, null);
+        changes.hardlight( CharSprite.POSITIVE );
+        changes.fullWidth = true; //059v2 仅此一个分类，独占整行而不是只占左半区
         changeInfos.add(changes);
         changes.addButton(new ChangeButton(new ItemSprite(ItemSpriteSheet.BATTERY),
                 "0层机密商店",
@@ -148,42 +149,31 @@ public class v0_5_X_Changes {
         "_-_ _P90_永久解锁（10电池）：购买后P90加入正常局内武器生成池，不再仅限于测试模式。\n"+
         "_-_ _圣诞入场券_（10电池）：购买后放入背包，交给0层前进营地的FNC可永久解锁圣诞节彩蛋开关。\n"
         ));
-        changes.addButton(new ChangeButton(new Hero(HeroClass.HUNTRESS), 0.8F,
-                "超级小爱DLC",
-        "_-_ 隼新增转职_汉阳造88式-超级小爱_。但暂未完成。\n"+
-        "_-_ 拥有专属被动_超级小爱飞行_：可随时启停的无限时长飞行，启用时移动速度_+20%_且视野穿透高草。\n"+
-        "_-_ 需通过0层机密商店购买_超级小爱DLC_永久解锁。\n"
-        ));
         changes.addButton(new ChangeButton(new Hero(HeroClass.TYPE561), 0.8F,
                 "旧版56-1式",
         "_-_ 新增_旧版56-1式_隐藏切换按钮：“或许可以找一找切换的入口？”\n"+
         "_-_ 旧版机制包含：_旧版袖珍本_（击杀敌人充能升级）、_旧版56-1式_与_旧版56-2式_武器。以及12力以上极度饥饿-1力量。\n"+
         "_-_ 切换仅对新开局生效，旧版护甲技能沿用新版效果。\n"
         ));
-
-        changes = new ChangeInfo(Messages.get(ChangesScene.class, "buffs"), false, null);
-        changes.hardlight( CharSprite.POSITIVE );
-        changeInfos.add(changes);
-        changes.addButton(new ChangeButton(Icons.get(Icons.DISPLAY),
-                "角色解锁方式调整",
-        "_-_ _GSh-18_：使用_疫苗磁盘_（祛咒卷轴）解锁。\n"+
+        //界面与机制调整：5页可翻页窗口（角色解锁/缩放/标题页/天赋重构/节日色彩）
+        changes.addButton(new ChangeButton(new Object[]{Icons.get(Icons.DISPLAY), null, null, null, null},
+                new String[]{"角色解锁方式调整", "PC端3.5档位缩放", "标题页交互优化", "天赋系统重构", "节日日期色彩"},
+                new String[]{
+        "_-_ _GSh-18_：使用_疫苗磁盘_解锁。\n"+
         "_-_ _56-1式_：使用_全肉大饼_解锁。\n"+
         "_-_ _丹德莱_：达成_返程_（完美结局）解锁。\n"+
-        "_-_ _HK416_：「HK416正在全力制作中，敬请期待。」\n"
-        ));
-        changes.addButton(new ChangeButton(Icons.get(Icons.DISPLAY),
-                "PC端3.5档位缩放",
-        "_-_ PC端新增_3.5X_缩放半档，在原3X与4X之间提供更精细的显示比例选择。\n"
-        ));
-        changes.addButton(new ChangeButton(Icons.get(Icons.DISPLAY),
-                "标题页交互优化",
-        "_-_ 标题页角色选择的翻页方式改为_滑动/鼠标滚轮/上下方向键_，操作更丝滑。\n"+
-        "_-_ 该功能需达成_完美结局_后解锁，调试版本始终可用。\n"
-        ));
+        "_-_ _HK416_：「HK416正在全力制作中，敬请期待。」\n",
 
-        changes = new ChangeInfo(Messages.get(ChangesScene.class, "changes"), false, null);
-        changes.hardlight( CharSprite.POSITIVE );
-        changeInfos.add(changes);
+        "_-_ PC端新增_3.5X_缩放半档，在原3X与4X之间提供更精细的显示比例选择。\n",
+
+        "_-_ 标题页角色选择的翻页方式改为_滑动/鼠标滚轮/上下方向键_，操作更丝滑。\n"+
+        "_-_ 该功能需达成_完美结局_后解锁，调试版本始终可用。\n",
+
+        "_-_ 将所有角色的天赋实现从_Talent.java_中拆分，每个角色对应一个独立的天赋实现类（_WarriorTalent_、_RogueTalent_、_MageTalent_、_HuntressTalent_、_Type561Talent_、_GSH18Talent_等），便于维护与扩展。\n",
+
+        "_-_ 局内菜单的_日期文本_现在会随节日显示_双色渐变_：圣诞节红绿、万圣节橙紫、面包节金棕、中秋节蓝白、复活节粉彩。\n"+
+        "_-_ 自己设置的_蛋糕日_为金白渐变，普通日期为灰色微渐变。\n"
+        }));
         changes.addButton(new ChangeButton(new ItemSprite(ItemSpriteSheet.RING_AMETHYST),
                 "超频调整",
         "_-_ BUG修复：_投掷武器_不再受到_超频_增益影响。\n"
@@ -195,32 +185,54 @@ public class v0_5_X_Changes {
         ));
         changes.addButton(new ChangeButton(new Hero(HeroClass.HUNTRESS), 0.8F,
                 "贴图调整",
-        "_-_ 原_HK416_角色贴图替换为_隼_（女猎手）贴图，新HK416正在制作中。\n"
+        "_-_ 原_HK416_角色贴图替换为_隼_（女猎手）贴图，新HK416正在制作中。\n"+
+        "_-_ 更新了_隼_在存档列表（标题页存档槽与读档窗口）中的头像。\n"
         ));
-        changes.addButton(new ChangeButton(Icons.get(Icons.DISPLAY),
-                "天赋系统重构",
-        "_-_ 将所有角色的天赋实现从_Talent.java_中拆分，每个角色对应一个独立的天赋实现类（_WarriorTalent_、_RogueTalent_、_MageTalent_、_HuntressTalent_、_Type561Talent_、_GSH18Talent_等），便于维护与扩展。\n"
+        changes.addButton(new ChangeButton(new ScaleArmor(),
+                "复合外骨骼重做",
+        "_-_ _复合外骨骼_机制重做：不再占用第二个护甲栏，改为像_勋章_一样附着在护甲内部。\n"+
+        "_-_ 在护甲上选择_复合_，可将一件_已鉴定且阶数低于当前护甲_的外骨骼复合进去，之后随时可以_查看_或_拆卸_。\n"+
+        "_-_ 复合外骨骼的_刻印_照常生效；与基底为_同种刻印_时，刻印等级额外_+1_。\n"+
+        "_-_ 复合_携带病毒_的外骨骼会使病毒转移到基底护甲，并破坏基底的正面刻印。\n"
+        ));
+        changes.addButton(new ChangeButton(new ItemSprite(ItemSpriteSheet.ARTIFACT_CAPE, null),
+                "曼蒂装甲调整",
+        "_-_ _曼蒂装甲_（荆棘斗篷）能量充满后_不再自动开启_偏斜力场，改为充满后可手动使用_开启力场_。\n"+
+        "_-_ 现在即使不受伤，装甲也会随时间_缓慢自然充能_。\n"+
+        "_-_ 新增_诅咒_效果_荆棘诅咒_：受伤时一半伤害转化为临时_最大生命值削减_，首次持续6回合，之后每次受伤延长3回合并叠加削减量。\n"
+        ));
+        changes.addButton(new ChangeButton(new ItemSprite(ItemSpriteSheet.AWP),
+                "RF步枪标签",
+        "_-_ 新增_RF_（步枪）武器标签：_SV-98_、_春田M1903_、_莫辛-纳甘_、_Denel NTW-20_、_Super SASS_、_WA2000_、_SRS-Covert_现带有RF标签，供角色天赋等系统按武器类别判定。\n"
         ));
 
-        ArrayList<String> miscChanges = new ArrayList<>();
-        {
-            miscChanges.add(
-                    "_-_ 修复了_丹德莱_空手时可能报错的问题，空手默认为1F。\n"
-                    + "_-_ 修复了_双击GSh-18_导致崩溃的bug。\n"
-                    + "_-_ 修复了0层机密商店快捷出售商品时楼层错误导致的空指针。\n"
-            );
-            miscChanges.add(
-                    "_-_ _丹德莱_卡牌的受限情况现在直接写在卡牌文案描述中。\n"
-                    + "_-_ 微调了_丹德莱_部分卡牌的数值与逻辑。\n"
-                    + "_-_ 清理了_M4A1_的cation。\n"
-            );
-            miscChanges.add(
-                    "_-_ 重新实现了_关于界面_（AboutSceneV2），并加入了_魔绫地牢_、_萝卜地牢_的友链。\n"
-                    + "_-_ 修复了排行榜界面的若干显示问题。\n"
-            );
-        }
-        changes.addButton(new ChangeButton(new BlacksmithSprite(), 0.8F,
-                "其他调整", miscChanges));
+        //其他调整为多页轮播按钮：最后一页为超级小爱DLC（蓝色解锁券贴图）
+        Object[] miscIcons = new Object[]{
+                new BlacksmithSprite(), null, null,
+                new ItemSprite(ItemSpriteSheet.SuperAIDLC)
+        };
+        String[] miscTitles = new String[]{
+                "其他调整", null, null, "超级小爱DLC"
+        };
+        String[] miscPages = new String[]{
+                "_-_ 修复了_丹德莱_空手时可能报错的问题，空手默认为1F。\n"
+              + "_-_ 修复了_双击GSh-18_导致崩溃的bug。\n"
+              + "_-_ 修复了0层机密商店快捷出售商品时楼层错误导致的空指针。\n"
+              + "_-_ 修复了机密商店购买二次确认后卡片未正常销毁、关闭窗口后仍遮挡屏幕区域导致无法点击移动的问题。\n"
+              + "_-_ 击杀怪物时飘出的_经验值数字_现在会正确显示各类经验加成后的实际数值。\n",
+
+                "_-_ _丹德莱_卡牌的受限情况现在直接写在卡牌文案描述中。\n"
+              + "_-_ 微调了_丹德莱_部分卡牌的数值与逻辑。\n"
+              + "_-_ 清理了_M4A1_的cation。\n",
+
+                "_-_ 重新实现了_关于界面_（AboutSceneV2），并加入了_魔绫地牢_、_萝卜地牢_的友链。\n"
+              + "_-_ 修复了排行榜界面的若干显示问题。\n"
+              + "_-_ 手机端新玩家的默认显示比例上限调整为_8X_（原为9X），仅影响从未手动调整过缩放时的自动默认值。\n"
+              + "_-_ _旧版56-1式_在存档列表与角色选择界面的职业名特化为“_老练的561式_”，便于区分新旧模式。\n",
+
+                "_-_ 隼新增转职_汉阳造88式-超级小爱_。暂未完成，目前暂时将资源预置出来。\n"
+        };
+        changes.addButton(new ChangeButton(miscIcons, miscTitles, miscPages,0.8F));
     }
 
     public static void add_0_5_9_Changes( ArrayList<ChangeInfo> changeInfos ) {
