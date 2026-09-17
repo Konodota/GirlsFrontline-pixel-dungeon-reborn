@@ -107,14 +107,16 @@ public class WndGame extends Window {
 			curBtn.icon(Icons.get(Icons.DISPLAY));
 		}
 
-		// 重建0层(自杀) 和 主菜单（0层）
+		// 原地重建0层（重选角色） 和 主菜单（0层）
 		if(0==GamesInProgress.curSlot && !heroDied){
-			// 重置楼层按钮
+			// 重置楼层按钮：弹出角色选择，确认后在加载场景内清空并全新生成0层，不经过标题页
 			RedButton resetBtn = new RedButton( Messages.get(this, "kill") ) {
 				@Override
-				protected void onClick() {//mark
-                    Dungeon.hero.damage(9999999,Dungeon.hero);
-                    hide();
+				protected void onClick() {
+					hide();
+					//默认预选当前角色，方便玩家直接确认
+					GamesInProgress.selectedClass = Dungeon.hero.heroClass;
+					GameScene.show( new WndZeroLevelHeroSelect(true) );
 				}
 			};
 			resetBtn.icon(Icons.get(Icons.EXIT));

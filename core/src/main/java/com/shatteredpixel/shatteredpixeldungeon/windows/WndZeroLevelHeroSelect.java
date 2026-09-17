@@ -40,7 +40,16 @@ public class WndZeroLevelHeroSelect extends Window {
 	private float firstRowBottom;
 	private float heroAreaBottom;
 
+	//是否为游戏内“重置楼层”时弹出：为true时开始游戏走InterlevelScene原地重建，取消则直接返回营地
+	private final boolean inGameReset;
+
 	public WndZeroLevelHeroSelect(){
+		this(false);
+	}
+
+	public WndZeroLevelHeroSelect(boolean inGameReset){
+		this.inGameReset = inGameReset;
+
 		RenderedTextBlock title = PixelScene.renderTextBlock(Messages.get(this, "title"), 12);
 		title.hardlight(Window.TITLE_COLOR);
 		title.setPos((WIDTH - title.width())/2f, 3);
@@ -104,16 +113,27 @@ public class WndZeroLevelHeroSelect extends Window {
 	}
 
 	private void startZeroLevelGame(){
-		Dungeon.hero = null;
 		ActionIndicator.clearAll();
 		GamesInProgress.curSlot = 0;
-		InterlevelScene.start();
-		Game.switchScene(GameScene.class);
+		if (inGameReset){
+			//游戏内重置楼层：进入加载场景原地清空重建（角色使用本次选择），不经过标题页
+			InterlevelScene.mode = InterlevelScene.Mode.RESTART_ZERO;
+			Game.switchScene(InterlevelScene.class);
+		} else {
+			Dungeon.hero = null;
+			InterlevelScene.start();
+			Game.switchScene(GameScene.class);
+		}
 		hide();
 	}
 
 	@Override
 	public void onBackPressed() {
+		//游戏内重置时点返回：放弃重置，直接回到营地，英雄与存档保持原状
+		if (inGameReset){
+			super.onBackPressed();
+			return;
+		}
 		// 直接退出时未选角色，默认设为 UMP45（WARRIOR），避免后续 hero 判定为 null
 		if (GamesInProgress.selectedClass == null){
 			GamesInProgress.selectedClass = HeroClass.WARRIOR;

@@ -75,7 +75,7 @@ public class InterlevelScene extends PixelScene {
     public static boolean isStart = false;
 	
 	public enum Mode {
-		ACCESS,DESCEND, ASCEND, CONTINUE, RESURRECT, RETURN, FALL, NONE, RESET
+		ACCESS,DESCEND, ASCEND, CONTINUE, RESURRECT, RETURN, FALL, NONE, RESET, RESTART_ZERO
 	}
 	public static Mode mode=Mode.NONE;
 
@@ -285,6 +285,9 @@ public class InterlevelScene extends PixelScene {
                             case RESET:
                                 reset();
                                 break;
+							case RESTART_ZERO:
+								restartZero();
+								break;
 						}
 
 					} catch (Exception e) {
@@ -488,6 +491,23 @@ public class InterlevelScene extends PixelScene {
         } else
             Dungeon.switchLevel(copyLevel,copyLevel.entrance);
     }
+
+	//0层前进营地“原地重置楼层”：不返回标题、不播死亡流程，
+	//在加载场景内清空旧营地存档，按新选择的角色重新初始化并全新生成0层
+	private void restartZero() {
+		Mob.clearHeldAllies();
+
+		//先清空0号槽的全部楼层文件（主营地/各子房间及其复制档）：
+		//0层会随版本持续新增内容，旧布局存档反序列化可能缺内容甚至报错，
+		//整体删除后重新生成可以保证新版本内容必定出现、旧存档不会炸
+		Dungeon.deleteGame( GamesInProgress.curSlot, true );
+
+		Dungeon.init("ANEWWORLD",0);
+		GameLog.wipe();
+		Dungeon.depth = Statistics.deepestFloor = -1;
+		Level level = Dungeon.newLevel(0);
+		Dungeon.switchLevel( level, level.entrance );
+	}
 	
 	private void ascend() throws IOException {
 

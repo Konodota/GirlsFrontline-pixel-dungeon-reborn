@@ -477,13 +477,16 @@ public class GameScene extends PixelScene {
 
 		layoutTags();
 
-		//0层前进营地：在左上角状态栏下方的空白处放置交互提示文字的显隐开关
+		//0层前进营地：在左上角空白处放置交互提示文字的显隐开关
+		//手机小UI状态栏在左上角，按钮放其正下方；全尺寸PC端状态栏在左下角，左上角完全空白，按钮直接放左上角
 		if (Dungeon.level instanceof ZeroLevel) {
-			labelToggle = new InteractLabelButton();
+			labelToggle = new InteractLabelButton( uiSize );
 			labelToggle.camera = uiCamera;
 			RectF labelInsets = DeviceCompat.getSafeInsets();
 			labelInsets = labelInsets.scale( 1f / uiCamera.zoom );
-			labelToggle.setPos( labelInsets.left + 2, status.bottom() + 2 );
+			float toggleX = labelInsets.left + 2;
+			float toggleY = uiSize > 0 ? labelInsets.top + 2 : status.bottom() + 2;
+			labelToggle.setPos( toggleX, toggleY );
 			add( labelToggle );
 		}
 
