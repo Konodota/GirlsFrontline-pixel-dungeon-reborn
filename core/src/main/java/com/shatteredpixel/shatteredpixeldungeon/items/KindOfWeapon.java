@@ -50,7 +50,8 @@ abstract public class KindOfWeapon extends EquipableItem {
 
 	//武器枪种标签，供角色天赋等系统按武器类别进行判定
 	public enum Tag {
-		NONE, HG	//手枪（Handgun）
+		NONE, HG,	//手枪（Handgun）
+		RF	        //步枪（Rifle）
 	}
 	protected Tag tag = Tag.NONE;
 	public boolean hasTag( Tag tag ){

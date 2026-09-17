@@ -23,15 +23,22 @@ package com.shatteredpixel.shatteredpixeldungeon.items.artifacts;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Catalog;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
+import com.watabou.noosa.Image;
+import com.watabou.utils.Bundle;
 import com.watabou.utils.Random;
 
+import java.util.ArrayList;
+
 public class CapeOfThorns extends Artifact {
+
+	public static final String AC_ACTIVATE = "ACTIVATE";
 
 	{
 		image = ItemSpriteSheet.ARTIFACT_CAPE;
@@ -42,26 +49,56 @@ public class CapeOfThorns extends Artifact {
 		chargeCap = 100;
 		cooldown = 0;
 
-		defaultAction = "NONE"; //so it can be quickslotted
+		defaultAction = AC_ACTIVATE;
+	}
+
+	@Override
+	public ArrayList<String> actions( Hero hero ) {
+		ArrayList<String> actions = super.actions( hero );
+		if (isEquipped( hero ) && cooldown == 0 && charge >= chargeCap) {
+			actions.add( AC_ACTIVATE );
+		}
+		return actions;
+	}
+
+	@Override
+	public void execute( Hero hero, String action ) {
+
+		super.execute( hero, action );
+
+		if (action.equals( AC_ACTIVATE )) {
+
+			if (!isEquipped( hero )) {
+				GLog.i( Messages.get(Artifact.class, "need_to_equip") );
+			} else if (cooldown > 0) {
+				GLog.w( Messages.get(this, "already_active") );
+			} else if (charge < chargeCap) {
+				GLog.w( Messages.get(this, "no_charge") );
+			} else {
+				charge = 0;
+				cooldown = 10 + level();
+				GLog.p( Messages.get(this, "radiating") );
+				updateQuickslot();
+			}
+		}
+        lockchB();
 	}
 
 	@Override
 	protected ArtifactBuff passiveBuff() {
 		return new Thorns();
 	}
-	
+
 	@Override
 	public void charge(Hero target, float amount) {
 		if (cooldown == 0) {
 			charge += Math.round(4*amount);
+			if (charge > chargeCap) charge = chargeCap;
 			updateQuickslot();
-		}
-		if (charge >= chargeCap){
-			target.buff(Thorns.class).proc(0, null, null);
 		}
         lockchB();
 	}
-	
+
 	@Override
 	public String desc() {
 		String desc = Messages.get(this, "desc");
@@ -71,6 +108,10 @@ public class CapeOfThorns extends Artifact {
 				desc += Messages.get(this, "desc_inactive");
 			else
 				desc += Messages.get(this, "desc_active");
+
+			if (cursed) {
+				desc += "\n\n" + Messages.get(this, "desc_cursed");
+			}
 		}
 
 		return desc;
@@ -81,6 +122,21 @@ public class CapeOfThorns extends Artifact {
 		@Override
 		public boolean act(){
             lockcha();
+
+			//自然充能：每回合恢复 0.1% 充能
+			if (cooldown == 0 && charge < chargeCap) {
+				partialCharge += 0.1f;
+				while (partialCharge >= 1) {
+					partialCharge--;
+					charge++;
+					if (charge >= chargeCap) {
+						charge = chargeCap;
+						partialCharge = 0;
+					}
+				}
+				updateQuickslot();
+			}
+
 			if (cooldown > 0) {
 				cooldown--;
 				if (cooldown == 0) {
@@ -95,11 +151,7 @@ public class CapeOfThorns extends Artifact {
 		public int proc(int damage, Char attacker, Char defender){
 			if (cooldown == 0){
 				charge += damage*(0.5+level()*0.05);
-				if (charge >= chargeCap){
-					charge = 0;
-					cooldown = 10+level();
-					GLog.p( Messages.get(this, "radiating") );
-				}
+				if (charge > chargeCap) charge = chargeCap;
 			}
 
 			if (cooldown != 0){
@@ -120,8 +172,22 @@ public class CapeOfThorns extends Artifact {
 				}
 
 			}
+
+			//诅咒效果：50%所受伤害转化为临时最大生命值削减
+			if (isCursed() && damage > 0 && defender instanceof Hero) {
+				applyThornCurse( (Hero) defender, damage );
+			}
+
 			updateQuickslot();
 			return damage;
+		}
+
+		private void applyThornCurse( Hero hero, int damage ) {
+			int amount = Math.max( 1, Math.round( damage * 0.5f ) );
+			ThornCurse curse = Buff.affect( hero, ThornCurse.class );
+			curse.extend( amount );
+			hero.updateHT( false );
+			BuffIndicator.refreshHero();
 		}
 
 		@Override
@@ -149,6 +215,98 @@ public class CapeOfThorns extends Artifact {
 			super.detach();
 		}
 
+	}
+
+	/**
+	 * 荆棘诅咒：临时削减最大生命值。
+	 * 持续 6 回合，后续受到伤害会额外延长 3 回合并叠加削减量。
+	 */
+	public static class ThornCurse extends Buff {
+
+		{
+			type = buffType.NEGATIVE;
+			announced = true;
+		}
+
+		public int reduction = 0;
+		public int left = 0;
+
+		@Override
+		public boolean act() {
+			left--;
+			if (left <= 0) {
+				detach();
+			} else {
+				spend( TICK );
+			}
+			return true;
+		}
+
+		@Override
+		public void detach() {
+			super.detach();
+			if (target instanceof Hero) {
+				((Hero) target).updateHT( false );
+				BuffIndicator.refreshHero();
+			}
+		}
+
+		public int reduction() {
+			return reduction;
+		}
+
+		/**叠加诅咒削减量并延长持续时间。首次施加为 6 回合，后续每次延长 3 回合。*/
+		public void extend( int amount ) {
+			reduction += amount;
+			if (left <= 0) {
+				left = 6;
+				spend( TICK );
+			} else {
+				left += 3;
+			}
+		}
+
+		@Override
+		public int icon() {
+			return BuffIndicator.SACRIFICE;
+		}
+
+		@Override
+		public void tintIcon( Image icon ) {
+			icon.hardlight( 0.6f, 0.1f, 0.3f );
+		}
+
+		@Override
+		public String iconTextDisplay() {
+			return Integer.toString( left );
+		}
+
+		@Override
+		public String toString() {
+			return Messages.get( this, "name" );
+		}
+
+		@Override
+		public String desc() {
+			return Messages.get( this, "desc", reduction, left );
+		}
+
+		private static final String REDUCTION = "reduction";
+		private static final String LEFT = "left";
+
+		@Override
+		public void storeInBundle( Bundle bundle ) {
+			super.storeInBundle( bundle );
+			bundle.put( REDUCTION, reduction );
+			bundle.put( LEFT, left );
+		}
+
+		@Override
+		public void restoreFromBundle( Bundle bundle ) {
+			super.restoreFromBundle( bundle );
+			reduction = bundle.getInt( REDUCTION );
+			left = bundle.getInt( LEFT );
+		}
 	}
 
 

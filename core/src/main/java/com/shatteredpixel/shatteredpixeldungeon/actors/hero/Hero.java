@@ -295,7 +295,14 @@ public class Hero extends Char {
 		if (buff(ElixirOfMight.HTBoost.class) != null){
 			HT += buff(ElixirOfMight.HTBoost.class).boost();
 		}
-		
+
+		//荆棘斗篷诅咒：临时削减最大生命值
+		CapeOfThorns.ThornCurse thornCurse = buff(CapeOfThorns.ThornCurse.class);
+		if (thornCurse != null) {
+			HT -= thornCurse.reduction();
+			if (HT < 1) HT = 1;
+		}
+
 		if (boostHP){
 			HP += Math.max(HT - curHT, 0);
 		}

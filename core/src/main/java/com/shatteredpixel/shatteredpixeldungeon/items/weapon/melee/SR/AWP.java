@@ -29,6 +29,7 @@ public class AWP extends SniperRifle {
         image = ItemSpriteSheet.AWP;
         tier = 4;
         dmgUpgradeDiffer = 2;
+        tag = Tag.RF;
     }
 
 }

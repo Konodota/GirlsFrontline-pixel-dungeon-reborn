@@ -32,6 +32,7 @@ public class Wa extends LongRange {
 		RCH = 4;    //lots of extra reach
         dmgBaseMul = 3;
         dmgUpgradeDiffer = -1;
+		tag = Tag.RF;
 	}
 
 }

@@ -30,6 +30,7 @@ public class M1903 extends SniperRifle {
 
 		tier = 2;
         dmgUpgradeDiffer = 1;
+		tag = Tag.RF;
 	}
 
 }

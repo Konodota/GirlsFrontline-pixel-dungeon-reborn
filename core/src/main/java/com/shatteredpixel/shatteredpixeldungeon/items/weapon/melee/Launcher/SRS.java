@@ -30,6 +30,7 @@ public class SRS extends Launcher {
 
         tier = 1;
         ACC = 2f;
+        tag = Tag.RF;
     }
 
 }

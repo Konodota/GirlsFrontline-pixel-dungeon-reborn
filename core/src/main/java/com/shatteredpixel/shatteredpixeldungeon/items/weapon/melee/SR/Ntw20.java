@@ -30,6 +30,7 @@ public class Ntw20 extends SniperRifle {
         dmgBaseMul = 17.4F;
         dmgUpgradeMul = 5.6F;
         dmgUpgradeDiffer = 4;
+        tag = Tag.RF;
     }
 
     // 添加模式切换选项

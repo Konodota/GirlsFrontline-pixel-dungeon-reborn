@@ -11,6 +11,7 @@ public class MOSINNAGANT extends SniperRifle {
           image = ItemSpriteSheet.MOSINNAGANT;
           tier = 3;
           dmgUpgradeDiffer = 2;
+          tag = Tag.RF;
 	  }
 
 }

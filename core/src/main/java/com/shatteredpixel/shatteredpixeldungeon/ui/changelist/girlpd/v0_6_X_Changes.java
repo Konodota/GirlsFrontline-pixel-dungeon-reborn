@@ -1,5 +1,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.ui.changelist.girlpd;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.ChangesScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
@@ -28,14 +29,19 @@ public class v0_6_X_Changes {
         changeInfos.add(changes);
         changes.addButton(new ChangeButton(Icons.get(Icons.DISPLAY),
                 "v0.6.x 更新日志",
-                "_-_ 0.6.x 版本的更新内容正在整理中，敬请期待。\n"
-                + "_-_ 本页面将随版本推进持续更新，新条目会陆续补充到下方各分类中。"));
+                "_-_ 0.6.x 版本的更新内容正在整理中，敬请期待。\n"+
+                "_-_ 本页面将随版本推进持续更新，新条目会陆续补充到下方各分类中。"));
 
         //调整
         changes = new ChangeInfo(Messages.get(ChangesScene.class, "changes"), false, null);
         changes.hardlight( CharSprite.POSITIVE );
         changeInfos.add(changes);
         //在这里追加 changes.addButton(...)
+        changes.addButton(new ChangeButton(Icons.get(HeroClass.HK416),
+                "v0.6.x HK416将在0.6版本添加",
+                "_-_ 0.6.x 版本的调整内容正在整理中，敬请期待。\n"));
+
+
 
         //增强
         changes = new ChangeInfo(Messages.get(ChangesScene.class, "buffs"), false, null);

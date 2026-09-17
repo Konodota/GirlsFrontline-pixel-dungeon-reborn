@@ -31,6 +31,7 @@ public class Sass extends DesignatedMarksmanRifle {
 		tier = 5;
 		DLY = 0.8f; //1.25x speed
         dmgBaseMul = 3;
+		tag = Tag.RF;
 	}
 
 }
