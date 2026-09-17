@@ -130,9 +130,9 @@ public class HighGrass {
                 float time = 0;
 
 				if (hero.belongings.armor() != null ) {
-                    if (hero.belongings.hasGlyph(Camouflage.class, hero)) {
-                        time += Camouflage.HeroActivate(hero.belongings.GlyphLevel(Camouflage.class));
-						hero.belongings.guessArmorByGlyph(Camouflage.class);
+                    if (hero.belongings.armor().hasGlyph(Camouflage.class, hero)) {
+                        time += Camouflage.HeroActivate(hero.belongings.armor().GlyphLevel(Camouflage.class));
+						hero.belongings.armor().guessArmorByGlyph(Camouflage.class);
                     }
 				}
 

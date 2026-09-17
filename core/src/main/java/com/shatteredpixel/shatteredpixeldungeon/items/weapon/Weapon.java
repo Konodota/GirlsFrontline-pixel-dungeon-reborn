@@ -393,13 +393,10 @@ abstract public class Weapon extends KindOfWeapon {
         int level = super.buffedLvl(lvl);
         if (BuffLevelPoint != Integer.MIN_VALUE)
             return level;
-		if (isEquipped( hero ) || hero.belongings.contains( this )){
+		if (isEquipped( hero )){
             // 56-1式天赋：火线补给T4-2电解糖分（实现见 Type561Talent）
             level += Type561Talent.weaponLevelBonus(hero);
-			//超频瞄准镜不提升投掷武器的虚拟等级
-			if (!(this instanceof MissileWeapon)) {
-				level += RingOfKing.updateMultiplier(hero);
-			}
+			level += RingOfKing.updateMultiplier(hero);
 			// GSH18天赋：伴星同调——未来之星副武器有效等级向主武器看齐（实现见 GSH18Talent）
 			level += GSH18Talent.companionStarSyncBonus(hero, this);
 		}

@@ -62,7 +62,6 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Regeneration;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.SiriusHeart;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.SuperAiFlight;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.SnipersMark;
-import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.StarShield;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.GSH18Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.HuntressTalent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.MageTalent;
@@ -71,7 +70,6 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.Type561Ta
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.WarriorTalent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.TalentSecondSight;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vertigo;
-import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.WellFed;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ArmorAbility;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.huntress.NaturesPower;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.warrior.Endure;
@@ -671,14 +669,7 @@ public class Hero extends Char {
 
 		if (belongings.armor() != null)
             // Use the only or first
-			evasion = belongings.armor().evasionFactor(this, evasion, false);
-
-        if (belongings.SecondArmor() != null)
-            evasion = belongings.SecondArmor().evasionFactor(this, evasion, true);
-
-//        if (belongings.hasGlyph(Stone.class, this) && !((Stone)glyph).testingEvasion())
-//            evasion = 0;
-		//仅生效副护甲的闪避，似乎可接受？
+			evasion = belongings.armor().evasionFactor(this, evasion);
 
 		return Math.round(evasion);
 	}
@@ -709,14 +700,11 @@ public class Hero extends Char {
                 armDr -= 2*(belongings.armor().STRReq() - STR());
             }
             if (armDr > 0) dr += armDr;
-        }
-        if (belongings.SecondArmor() != null) {
-            int armDr = Random.NormalIntRange( belongings.SecondArmor().DRMin(), belongings.SecondArmor().DRMax());
-            if (STR() < belongings.SecondArmor().STRReq()){
-                armDr -= 2*(belongings.SecondArmor().STRReq() - STR());
-            }
-            armDr = Math.min( armDr, WarriorTalent.secondArmorDRCap(this, belongings.SecondArmor().tier));
-            if (armDr > 0) dr += armDr;
+			if (belongings.armor().inside != null) {
+				armDr = Random.NormalIntRange( belongings.armor().inside.DRMin(), belongings.armor().inside.DRMax());
+            	armDr = Math.min( armDr, WarriorTalent.secondArmorDRCap(this, belongings.armor().inside.tier()));
+            	if (armDr > 0) dr += armDr;
+			}
         }
 		if (belongings.weapon() != null)  {
 			int wepDr = Random.NormalIntRange( 0 , belongings.weapon().defenseFactor( this ) );
@@ -780,11 +768,8 @@ public class Hero extends Char {
 		if (belongings.armor() != null) {
             speed = belongings.armor().speedFactor(this, speed);
         }
-        if (belongings.SecondArmor() != null) {
-            speed = belongings.SecondArmor().speedFactor(this, speed);
-        }
 
-		if (belongings.hasGlyph(Swiftness.class, this)) {
+		if (belongings.armor() != null && belongings.armor().hasGlyph(Swiftness.class, this)) {
 			boolean enemyNear = false;
 			PathFinder.buildDistanceMap(pos, Dungeon.level.passable, 2);
 			for (Char ch : Actor.chars()) {
@@ -794,18 +779,18 @@ public class Hero extends Char {
 				}
 			}
 			if (!enemyNear) {
-				speed *= (1.2f + 0.04f * belongings.GlyphLevel(Swiftness.class));
+				speed *= (1.2f + 0.04f * belongings.armor().GlyphLevel(Swiftness.class));
 				if (wholeTime())
-					belongings.guessArmorByGlyph(Swiftness.class);
+					belongings.armor().guessArmorByGlyph(Swiftness.class);
 			}
 		}
-		else if (belongings.hasGlyph(Flow.class, this) && Dungeon.level.water[pos]) {
-			speed *= (2f + 0.25f * belongings.GlyphLevel(Flow.class));
+		else if (belongings.armor() != null && belongings.armor().hasGlyph(Flow.class, this) && Dungeon.level.water[pos]) {
+			speed *= (2f + 0.25f * belongings.armor().GlyphLevel(Flow.class));
 			if (wholeTime())
-				belongings.guessArmorByGlyph(Flow.class);
+				belongings.armor().guessArmorByGlyph(Flow.class);
 		}
 
-		if (belongings.hasGlyph(Bulk.class, this) &&
+		if (belongings.armor() != null && belongings.armor().hasGlyph(Bulk.class, this) &&
 				(Dungeon.level.map[pos] == Terrain.DOOR
 						|| Dungeon.level.map[pos] == Terrain.OPEN_DOOR)) {
 			speed /= 3f;
@@ -1611,9 +1596,9 @@ public class Hero extends Char {
 		dmg = (int)Math.ceil(dmg * RingOfTenacity.damageMultiplier( this ));
 
 		//TODO improve this when I have proper damage source logic
-		if ( belongings.hasGlyph(AntiMagic.class, this)
+		if ( belongings.armor() != null && belongings.armor().hasGlyph(AntiMagic.class, this)
 				&& AntiMagic.RESISTS.contains(src.getClass())){
-			dmg -= AntiMagic.drRoll( belongings.GlyphLevel(AntiMagic.class) );
+			dmg -= AntiMagic.drRoll( belongings.armor().GlyphLevel(AntiMagic.class) );
 		}
 
 		// 战士（UMP45）铁胃：饥饿（debuff）伤害缩减（实现见 WarriorTalent）
@@ -2034,8 +2019,8 @@ public class Hero extends Char {
 	public float stealth() {
 		float stealth = super.stealth();
 
-		if (belongings.hasGlyph(Obfuscation.class, this)){
-			stealth = Armor.stealthFactor(stealth);
+		if (belongings.armor() != null && belongings.armor().hasGlyph(Obfuscation.class, this)){
+			stealth = belongings.armor().stealthFactor(this, stealth);
 		}
 
 		return stealth;
@@ -2368,7 +2353,7 @@ public class Hero extends Char {
 	@Override
 	public boolean isImmune(Class effect) {
 		if (effect == Burning.class
-				&& belongings.hasGlyph(Brimstone.class, this)){
+				&& belongings.armor() != null && belongings.armor().hasGlyph(Brimstone.class, this)){
 			return true;
 		}
 		return super.isImmune(effect);

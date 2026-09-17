@@ -74,9 +74,6 @@ public class CurseInfusion extends InventorySpell {
 				((MagesStaff) w).updateWand(true);
 			}
 		} else if (item instanceof Armor){
-            if (Dungeon.hero.belongings.secArmor == item){
-                Armor.curseMoving(Dungeon.hero);
-            }
 			Armor a = (Armor) item;
 			if (a.glyph != null){
 				a.inscribe(Armor.Glyph.randomCurse(a.glyph.getClass()));

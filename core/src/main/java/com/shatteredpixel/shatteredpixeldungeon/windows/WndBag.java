@@ -31,6 +31,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.items.EquipableItem;
 import com.shatteredpixel.shatteredpixeldungeon.items.Gold;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.Bag;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.MagicalHolster;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.PotionBandolier;
@@ -274,10 +275,10 @@ public class WndBag extends WndTabbed {
 			count--; //don't count this one, as it's not actually inside of itself
 		} else {
 			//副护甲与副手武器均在主背包最前展示，可同时出现
-			if (stuff.secArmor != null){
+			/*if (stuff.secArmor != null){
 				placeItem(stuff.secArmor);
 				equipped++;
-			}
+			}*/
 		}
 
 		// Items in the bag, except other containers (they have tags at the bottom)

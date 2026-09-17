@@ -39,7 +39,7 @@ public class RingOfKing extends Ring {
 				if (!(b instanceof KingUpdate))
 					other = b;
 			if (other == null || other.ring().isKnown() || other.ring().isGuess())
-				king.ring().guessType("国王瞄准镜对装备造成实质性影响");
+				king.ring().guessType("超频瞄准镜对装备造成实质性影响");
 		}
 		return allBonus;
 	}

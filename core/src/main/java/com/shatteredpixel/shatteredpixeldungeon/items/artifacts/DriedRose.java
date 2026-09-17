@@ -699,7 +699,7 @@ public class DriedRose extends Artifact {
 			int defense = super.defenseSkill(enemy);
 
 			if (defense != 0 && rose != null && rose.armor != null ){
-				defense = Math.round(rose.armor.evasionFactor( this, defense, false ));
+				defense = Math.round(rose.armor.evasionFactor( this, defense));
 			}
 			
 			return defense;

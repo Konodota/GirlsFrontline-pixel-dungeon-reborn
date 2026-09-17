@@ -226,7 +226,7 @@ abstract public class ClassArmor extends Armor {
                             }
 
                             public boolean itemSelectable(Item item) {
-                                return (item instanceof Armor) && (item != ClassArmor.this) && (item != hero.belongings.secArmor);
+                                return item instanceof Armor && item != ClassArmor.this;
                             }
 
                             public void onSelect(Item item) {
@@ -246,6 +246,8 @@ abstract public class ClassArmor extends Armor {
                                     ClassArmor.this.cursed = armor.cursed;
                                     ClassArmor.this.curseInfusionBonus = armor.curseInfusionBonus;
                                     ClassArmor.this.masteryPotionBonus = armor.masteryPotionBonus;
+									if (armor.inside != null)
+										ClassArmor.this.bindInside(armor.inside);
                                     if (armor.checkSeal() != null) {
                                         ClassArmor.this.inscribe(armor.glyph);
                                         ClassArmor.this.seal = armor.checkSeal();

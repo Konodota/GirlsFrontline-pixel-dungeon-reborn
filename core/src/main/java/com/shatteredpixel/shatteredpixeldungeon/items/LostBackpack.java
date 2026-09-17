@@ -76,15 +76,6 @@ public class LostBackpack extends Item {
 			}
 		}
 
-        if (hero.belongings.armor() != null && hero.belongings.SecondArmor() != null){
-            if (hero.belongings.armor.tier() < hero.belongings.secArmor.tier()){
-                final Armor armor = hero.belongings.armor;
-                hero.belongings.armor = hero.belongings.secArmor;
-                hero.belongings.secArmor = armor;
-            }
-            Armor.curseMoving(hero);
-        }
-
 		hero.updateHT(false);
 
 		Item.updateQuickslot();

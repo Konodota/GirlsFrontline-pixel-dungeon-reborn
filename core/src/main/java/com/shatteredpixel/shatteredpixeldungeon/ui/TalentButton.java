@@ -394,17 +394,10 @@ public class TalentButton extends Button {
 
     private static void onReplace(Talent replacing, Talent newTalent, Hero hero){
         if (replacing == Talent.HOLD_FAST){
-            if (hero.belongings.secArmor != null){
-                final Armor armor = hero.belongings.secArmor;
-                hero.belongings.secArmor = null;
-                boolean kept = armor.keptThoughLostInvent;
-                armor.keptThoughLostInvent = true;
-                armor.collect(Dungeon.hero.belongings.backpack);
-                armor.keptThoughLostInvent = kept;
-                BrokenSeal.WarriorShield sealBuff = hero.buff(BrokenSeal.WarriorShield.class);
-                if (sealBuff != null && armor == sealBuff.armor) {
-                    sealBuff.setArmor(null);
-                }
+            if (hero.belongings.armor != null){
+                final Armor armor = hero.belongings.armor.inside;
+				if (armor != null)
+					armor.doUnequip(hero, true);
             }
         }
         if (newTalent == Talent.IRON_WILL){

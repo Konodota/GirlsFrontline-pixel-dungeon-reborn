@@ -29,14 +29,11 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
-import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.EquipLevelUp;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.EquipmentBuff;
-import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Hunger;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.LockedFloor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicImmune;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Momentum;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
-import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.GSH18Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.WarriorTalent;
@@ -76,8 +73,10 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.HeroSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
-import com.shatteredpixel.shatteredpixeldungeon.windows.WndOptions;
+import com.shatteredpixel.shatteredpixeldungeon.windows.WndBag;
+import com.shatteredpixel.shatteredpixeldungeon.windows.WndInfoItem;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndStartGame;
+import com.shatteredpixel.shatteredpixeldungeon.windows.WndUseItem;
 import com.watabou.noosa.particles.Emitter;
 import com.watabou.utils.Bundlable;
 import com.watabou.utils.Bundle;
@@ -91,6 +90,8 @@ import java.util.Arrays;
 public class Armor extends EquipableItem {
 
 	protected static final String AC_DETACH       = "DETACH";
+	protected static final String AC_INSIDE       = "INSIDE";
+	protected static final String AC_VIEW_INSIDE  = "VIEW_INSIDE";
 	
 	public enum Augment {
 		EVASION (2 , -1),
@@ -121,7 +122,8 @@ public class Armor extends EquipableItem {
 	public boolean masteryPotionBonus = false;
 	
 	protected BrokenSeal seal;
-	
+	public Armor outside = null;
+	public Armor inside = null;
 	public int tier;
     public boolean UpdatedTierToLevel = false;
     public float broken;
@@ -144,6 +146,34 @@ public class Armor extends EquipableItem {
         masteryPotionBonus = armor.masteryPotionBonus;
         curseInfusionBonus = armor.curseInfusionBonus;
         return this;
+    }
+
+    public void bindInside( Armor insideArmor ){
+        //与已合并的一致，则不做改变
+        if (inside == insideArmor)
+            return;
+        //旧外骨骼无法取下（如被诅咒）时终止本次复合，新外骨骼退回背包
+        if (inside != null && !inside.doUnequip(hero, true)){
+            if (insideArmor != null) insideArmor.collect(hero.belongings.backpack);
+            return;
+        }
+        if (insideArmor == null)
+            return;
+        inside = insideArmor;
+        insideArmor.outside = this;
+        //复合上去的外骨骼带诅咒而基底无诅咒时，诅咒转移到基底（红底转移）
+        if (insideArmor.cursed && !this.cursed){
+            this.cursed = true;
+            insideArmor.cursed = false;
+            GLog.n( Messages.get(Armor.class, "cursed_moving") );
+            //诅咒破坏基底的正面附魔
+            if (hasGoodGlyph()) {
+                glyph = null;
+                GLog.n( Messages.get(Armor.class, "broken") );
+            }
+        }
+        if (hero.belongings.armor() == this)
+            insideArmor.activate(hero);
     }
 
     @Override
@@ -182,6 +212,7 @@ public class Armor extends EquipableItem {
     private static final String DURATION        = "duration";
     private static final String TierThisRun		= "TierThisRun";
     private static final String FirstUpdateTier	= "FirstUpdateTier";
+    private static final String INSIDE_ARMOR     = "inside_armor";
 
 	@Override
 	public void storeInBundle( Bundle bundle ) {
@@ -197,6 +228,8 @@ public class Armor extends EquipableItem {
         bundle.put( DURATION, duration);
         bundle.put( FirstUpdateTier, UpdatedTierToLevel);
         bundle.put( TierThisRun, tier);
+        if (inside != null)
+            bundle.put( INSIDE_ARMOR, inside );
 	}
 
 	@Override
@@ -215,6 +248,10 @@ public class Armor extends EquipableItem {
         UpdatedTierToLevel = bundle.getBoolean( FirstUpdateTier );
         if (bundle.contains( TierThisRun ))
             tier = bundle.getInt( TierThisRun );
+        if (bundle.contains( INSIDE_ARMOR )){
+            Armor insideArmor = (Armor) bundle.get( INSIDE_ARMOR );
+            bindInside(insideArmor);
+        }
 	}
 
 	@Override
@@ -224,25 +261,38 @@ public class Armor extends EquipableItem {
 		availableUsesToID = USES_TO_ID/2f;
 		//armor can be kept in bones between runs, the seal cannot.
 		seal = null;
+        outside = null;
+        inside = null;
 	}
 
 	@Override
 	public ArrayList<String> actions(Hero hero) {
 		ArrayList<String> actions = super.actions(hero);
 		if (seal != null) actions.add(AC_DETACH);
+		if (outside == null) {
+			if (!cursed && cursedKnown && hero.hasTalent(Talent.HOLD_FAST))
+				actions.add(AC_INSIDE);
+		}
+		else {
+			actions.remove(AC_EQUIP);
+			if (!outside.unEquipable(hero)) {
+				actions.remove(AC_DROP);
+				actions.remove(AC_UNEQUIP);
+				actions.remove(AC_THROW);
+			}
+		}
+		if (inside != null) actions.add(AC_VIEW_INSIDE);
 		return actions;
 	}
 
     @Override
     public boolean collect(Bag container) {
         if(super.collect(container)){
-            if (Dungeon.hero != null && Dungeon.hero.isAlive() && isIdentified() && glyph != null){
+            if (Dungeon.hero != null && Dungeon.hero.isAlive() && isIdentified() && glyph != null)
                 Catalog.setSeen(glyph.getClass());
-            }
             return true;
-        } else {
+        } else
             return false;
-        }
     }
     @Override
     public Item identify(boolean byHero) {
@@ -283,6 +333,34 @@ public class Armor extends EquipableItem {
 				Dungeon.level.drop(detaching, hero.pos);
 			}
 		}
+		else if (action.equals(AC_INSIDE)) {
+			//复合外骨骼：选择一件阶数低于当前护甲的外骨骼复合到自身内部
+			GameScene.selectItem(new WndBag.ItemSelector() {
+				@Override
+				public String textPrompt() {
+					return Messages.get(Armor.class, "inside_prompt");
+				}
+				@Override
+				public boolean itemSelectable(Item item) {
+					if (!(item instanceof Armor))
+						return false;
+					Armor a = (Armor) item;
+					if (a.tier() >= tier())
+						return false;
+					if (!a.cursedKnown)
+						return false;
+					return !a.isEquipped(hero) || !a.unEquipable(hero);
+				}
+				@Override
+				public void onSelect(Item item) {
+					if (item instanceof Armor)
+						bindInside((Armor) item.detach(hero.belongings.backpack));
+				}
+			});
+		}
+		else if (action.equals(AC_VIEW_INSIDE))
+			//查看已复合的外骨骼
+			GameScene.show(new WndUseItem(null, inside));
 	}
 
     protected mixArmor mixArmorTracker;
@@ -292,11 +370,9 @@ public class Armor extends EquipableItem {
         if (owner instanceof Hero){
             Hero hero = (Hero) owner;
             singleTracker(hero);
-            if (hero.belongings.armor != null)
-                hero.belongings.armor.singleTracker(hero);
-            if (hero.belongings.secArmor != null)
-                hero.belongings.secArmor.singleTracker(hero);
         }
+        if (inside != null)
+            inside.Tracker(owner);
     }
     private void singleTracker(Char owner){
         if (mixArmorTracker == null) {
@@ -311,207 +387,56 @@ public class Armor extends EquipableItem {
             mixArmorTracker.detach();
             mixArmorTracker = null;
         }
+        if (inside != null)
+            inside.stopTrack();
     }
 	@Override
 	public boolean doEquip( Hero hero ) {
         Tracker(hero);
-		detach(hero.belongings.backpack);
-        //主护甲为空，此时全空或复活未选
-		if (hero.belongings.armor() == null) {
-            //有且仅有复活未选时，armor()为空而armor不为空，直接脱下即可
-            changeFirst(hero);
-			onEquip(hero);
-			return true;
-		}
-        //新旧护甲都不适用于调整至副护甲时，按旧逻辑处理（坚守天赋判定见 WarriorTalent）
-        if (WarriorTalent.useLegacyArmorEquip(hero, tier())){
-            //因为加入了副护甲自动调整至主护甲的机制，所以旧逻辑不方便直接调用doUnequip，把原doUnequip的代码复制一份出来使用
-            if (hero.belongings.armor.unEquipable(hero)) {
-                changeFirst(hero);
-                onEquip(hero);
-                return true;
-            }
-            else {
-                GLog.w(Messages.get(EquipableItem.class, "unequip_cursed"));
-                collect( hero.belongings.backpack );
-                return false;
-            }
-        }
-        //对于pointsInTalent，无加点等效加点0，阶数至少为1
-        //所以上述逻辑完全覆盖了旧逻辑，并且执行代码相同，只是为了新内容而更改表述方式，下面的逻辑是为天赋改动新增的
-        else {
-            //主护甲无红底的情况下，允许与副护甲交互
-            if (!hero.belongings.armor.cursed) {
-                //副护甲阶数不小于新护甲，那么新护甲只能与副护甲交换
-                if (hero.belongings.SecondArmor() != null && hero.belongings.secArmor.tier()>= this.tier()){
-                    BrokenSeal.WarriorShield sealBuff = hero.buff(BrokenSeal.WarriorShield.class);
-                    if (sealBuff !=null && hero.belongings.secArmor == sealBuff.armor)
-                        sealBuff.setArmor(null);
-                    hero.belongings.secArmor.doDrop(hero);
-                    hero.belongings.secArmor = this;
-                    onEquip(hero);
-                    curseMoving(hero);
-                    return true;
-                }
-                //新护甲只能与主护甲交换的情况已在旧逻辑部分处理掉了
-                //主>天赋 && 新>天赋、主 == 新已处理，那么装备新护甲，新大于主则有顶替主或者主进入副护甲两种情况，主大于新同理，属于复杂情况
-                //复杂情况让玩家选择
-                //由于要先移除物品以流出空位给原来的装备，而这里是一个监听窗口，不做处理，所以先收集回来
-                collect(hero.belongings.backpack);
-                armorChoose(hero, this);
-                return false;
-            }
-            else {
-                //主护甲红底，新护甲高阶，无副护甲，主护甲可移动至副护甲，则允许移动，否则不允许
-                if (tier() > hero.belongings.armor.tier() &&
-                        hero.belongings.SecondArmor() == null){
-                    if (hero.belongings.secArmor!=null)
-                        hero.belongings.secArmor.doDrop(hero);
-                    hero.belongings.secArmor = hero.belongings.armor;
-                    hero.belongings.armor = this;
-                    onEquip(hero);
-                    curseMoving(hero);
-                    return true;
-                }
-                GLog.w(Messages.get(Armor.class, "unequip_cursed_second"));
-            }
-        }
+		detach( hero.belongings.backpack );
 
-        collect( hero.belongings.backpack );
-        return false;
+		if (hero.belongings.armor == null || hero.belongings.armor.doUnequip( hero, true, false )) {
+
+			hero.belongings.armor = this;
+
+			cursedKnown = true;
+			if (cursed) {
+				equipCursed( hero );
+				GLog.n( Messages.get(Armor.class, "equip_cursed") );
+			}
+
+			((HeroSprite)hero.sprite).updateArmor();
+			activate( hero );
+
+			Talent.onItemEquipped( hero, this );
+			hero.spendAndNext( time2equip() );
+
+			return true;
+
+		} else {
+
+			collect( hero.belongings.backpack );
+			return false;
+
+		}
 	}
 
     public int tier() {
-        return 0;
+        return 1;
     }
 
-    private void onEquip( Hero hero ) {
-        cursedKnown = true;
-        if (cursed) {
-            equipCursed( hero );
-            GLog.n( Messages.get(Armor.class, "equip_cursed") );
-        }
-        if (hero.belongings.armor == this)
-            ((HeroSprite)hero.sprite).updateArmor();
-        activate(hero);
-        Talent.onItemEquipped(hero, this);
-        hero.spendAndNext( time2equip() );
-        Tracker(hero);
-    }
     @Override
     public boolean unEquipable(Hero hero){
         // 医生直觉 +1级允许取下被诅咒的防具（实现见 GSH18Talent）
-        return  super.unEquipable(hero) || GSH18Talent.canUnequipArmor(hero);
-    }
-    private void changeFirst(Hero hero){
-        BrokenSeal.WarriorShield sealBuff = hero.buff(BrokenSeal.WarriorShield.class);
-        if (sealBuff != null && hero.belongings.armor == sealBuff.armor) {
-            sealBuff.setArmor(null);
-        }
-        if (hero.belongings.armor != null) {
-            boolean kept = hero.belongings.armor.keptThoughLostInvent;
-            hero.belongings.armor.keptThoughLostInvent = true;
-            hero.belongings.armor.collect(hero.belongings.backpack);
-            hero.belongings.armor.keptThoughLostInvent = kept;
-            hero.spend( time2equip() );
-        }
-        hero.belongings.armor = this;
-        ((HeroSprite)hero.sprite).updateArmor();
-    }
-    public static void curseMoving( Hero hero ) {
-        if (hero.belongings.secArmor != null && hero.belongings.secArmor.cursed){
-            //红底转移
-            if (!hero.belongings.armor.cursed){
-                hero.belongings.armor.cursed = true;
-                hero.belongings.secArmor.cursed = false;
-                GLog.n( Messages.get(Armor.class, "cursed_moving") );
-                //破坏正面附魔
-                if (hero.belongings.armor.hasGoodGlyph()) {
-                    hero.belongings.armor.glyph = null;
-                    GLog.n( Messages.get(Armor.class, "broken") );
-                }
-            }
-        }
-    }
-    private static void armorChoose (Hero hero, Armor armor){
-        String armor1;
-        String armor2;
-        final String nothing = "---";
-        //armor必定不为空，为空已被第一个if截取到了
-        //当前结构
-        if (hero.belongings.secArmor != null)
-            armor1 = Messages.titleCase(hero.belongings.armor.toString());
-        //复合结构
-        else if (hero.belongings.armor.tier() > armor.tier())
-            armor1 =  Messages.titleCase(hero.belongings.armor.toString());
-        else
-            armor1 = nothing;
-
-        //当前结构
-        if (hero.belongings.secArmor != null)
-            armor2 = Messages.titleCase(hero.belongings.secArmor.toString());
-        //复合结构
-        else if (hero.belongings.armor.tier() < armor.tier())
-            armor2 =  Messages.titleCase(hero.belongings.armor.toString());
-        else
-            armor2 = nothing;
-        String finalArmor1 = armor1;
-        String finalArmor2 = armor2;
-        GameScene.show(
-                new WndOptions(new ItemSprite(armor),
-                        Messages.get(Armor.class, "select_title"),
-                        Messages.get(Armor.class, "select_message"),
-                        finalArmor1,
-                        finalArmor2) {
-
-                    @Override
-                    protected void onSelect(int index) {
-                        if (index == 0) {
-                            armor.detach(hero.belongings.backpack);
-                            //选择第一个，那么就是准备占据掉主护甲，在没有副护甲的情况下将主护甲移动到副护甲
-                            if (finalArmor1.equals(nothing)) {
-                                hero.belongings.secArmor = hero.belongings.armor;
-                                hero.belongings.armor = null;
-                            }
-                            armor.changeFirst(hero);
-                            armor.onEquip(hero);
-                            curseMoving(hero);
-                        } else if (index == 1) {
-                            armor.detach(hero.belongings.backpack);
-                            if (finalArmor2.equals(nothing)){
-                                hero.belongings.secArmor = armor;
-                            }
-                            else if (finalArmor1.equals(nothing)){
-                                boolean kept = hero.belongings.armor.keptThoughLostInvent;
-                                hero.belongings.armor.keptThoughLostInvent = true;
-                                hero.belongings.armor.collect(hero.belongings.backpack);
-                                hero.belongings.armor.keptThoughLostInvent = kept;
-                                hero.belongings.armor = armor;
-                            }
-                            else {
-                                if (hero.belongings.secArmor != null) {
-                                    hero.belongings.secArmor.doDrop(hero);
-                                }
-                                if (hero.belongings.armor.tier() < armor.tier()) {
-                                    hero.belongings.secArmor = hero.belongings.armor;
-                                    hero.belongings.armor = armor;
-                                }
-                                else {
-                                    hero.belongings.secArmor = armor;
-                                }
-                            }
-                            armor.onEquip(hero);
-                            curseMoving(hero);
-                        }
-                    }
-                }
-        );
+        return (outside == null || outside.unEquipable(hero)) && super.unEquipable(hero) || GSH18Talent.canUnequipArmor(hero);
     }
 	@Override
 	public void activate(Char ch) {
 		if (seal != null) {
             Buff.affect(ch, BrokenSeal.WarriorShield.class).setArmor(this);
         }
+		if (inside != null)
+			inside.activate(ch);
         Tracker(ch);
 	}
 
@@ -537,24 +462,21 @@ public class Armor extends EquipableItem {
 
 	@Override
 	public boolean doUnequip( Hero hero, boolean collect, boolean single ) {
-        //主护甲红底不允许解除副护甲
-        if (hero.belongings.armor()!=null  && hero.belongings.armor.cursed &&
-                hero.belongings.secArmor == this ) {
-            GLog.w(Messages.get(Armor.class, "unequip_cursed_second"));
-            return false;
-        }
-
 		if (super.doUnequip( hero, collect, single )) {
 
-            if (hero.belongings.armor == this){
-                hero.belongings.armor = hero.belongings.secArmor;
-                ((HeroSprite)hero.sprite).updateArmor();
-            }
-            hero.belongings.secArmor = null;
-            BrokenSeal.WarriorShield sealBuff = hero.buff(BrokenSeal.WarriorShield.class);
-            if (sealBuff != null && hero.belongings.armor != sealBuff.armor) {
-                sealBuff.setArmor(null);
-            }
+			//仅当卸下的是穿着中的基底护甲时才清空装备位（复合外骨骼的取下由 bindInside 处理）
+			if (hero.belongings.armor == this) {
+				hero.belongings.armor = null;
+				((HeroSprite)hero.sprite).updateArmor();
+			}
+			else if (hero.belongings.armor != null && hero.belongings.armor.inside == this) {
+				hero.belongings.armor.inside = null;
+			}
+
+			BrokenSeal.WarriorShield sealBuff = hero.buff(BrokenSeal.WarriorShield.class);
+			if (sealBuff != null && sealBuff.armor == this) {
+				sealBuff.setArmor( null );
+			}
 
 			return true;
 
@@ -567,7 +489,7 @@ public class Armor extends EquipableItem {
 	
 	@Override
 	public boolean isEquipped( Hero hero ) {
-		return hero.belongings.armor() == this || hero.belongings.SecondArmor() == this
+		return hero.belongings.armor() == this || hero.belongings.armor() != null && hero.belongings.armor().inside == this
                 || ownerBuff instanceof EquipmentBuff && ownerBuff.target == hero;
 	}
 
@@ -605,13 +527,13 @@ public class Armor extends EquipableItem {
 		}
 	}
 
-    public float evasionFactor( Char owner, float evasion ,boolean isSecond){
+    public float evasionFactor( Char owner, float evasion){
 		
-		if (hasGlyph(Stone.class, owner) && !((Stone)glyph).testingEvasion()){
+		if (glyph instanceof Stone && owner.buff(MagicImmune.class) == null && !((Stone)glyph).testingEvasion()){
 			return 0;
 		}
 		
-		if (owner instanceof Hero && !isSecond){
+		if (owner instanceof Hero && outside == null){
 			int aEnc = STRReq() - ((Hero) owner).STR();
 			if (aEnc > 0) evasion /= Math.pow(1.5, aEnc);
 			
@@ -620,27 +542,29 @@ public class Armor extends EquipableItem {
 				evasion += momentum.evasionBonus(((Hero) owner).lvl, Math.max(0, -aEnc));
 		}
 		float add = augment.evasionFactor(buffedLvl());
-        if ( isSecond ){
+        if ( outside != null )
             // 战士（UMP45）坚守：副护甲闪避上限（实现见 WarriorTalent）
             add = Math.min( WarriorTalent.secondArmorEvasionCap(hero, tier()), add);
-        }
-		return evasion + add;
+		evasion += add;
+		if (inside != null)
+			evasion = evasionFactor(owner, evasion);
+		return evasion;
 	}
 	
 	public float speedFactor( Char owner, float speed ){
 		
 		if (owner instanceof Hero) {
 			int aEnc = STRReq() - ((Hero) owner).STR();
-			if (aEnc > 0) {
+			int baseNeed = baseSTRReq() - ((Hero) owner).STR();
+			if (aEnc > 0)
                 speed /= Math.pow(1.2, aEnc);
-            }
             int str = Math.max(0, baseSTRReq() - ((Hero) owner).STR());
             String cause = "";
             if (owner.wholeTime())
                 cause = "以完整回合盘初步判断护甲等级。";
-            else if (aEnc <= 0)
+            else if (baseNeed > 0 && aEnc <= 0)
                 cause = "以没有超力惩罚初步判断护甲等级。";
-            if (owner.wholeTime() || aEnc <=0)
+            if (baseNeed > 0 && (owner.wholeTime() || aEnc <=0))
                 guessLevel(STRNeed(str - Math.max(0, aEnc)), cause);
 		}else {
             if (hasGlyph(Swiftness.class, owner)) {
@@ -672,20 +596,11 @@ public class Armor extends EquipableItem {
 
     public float stealthFactor( Char owner, float stealth ){
 
-        if (hasGlyph(Obfuscation.class, owner)){
-            stealth += 1 + buffedLvl()/3f;
-        }
+        if (hasGlyph(Obfuscation.class, owner))
+            stealth += 1 + GlyphLevel(Obfuscation.class)/3f;
 
         return stealth;
     }
-    public static float stealthFactor( float stealth ){
-
-        if ( hero.belongings.hasGlyph(Obfuscation.class, hero) ){
-            stealth += 1 + hero.belongings.GlyphLevel(Obfuscation.class)/3F;
-        }
-        return stealth;
-    }
-	
 	@Override
 	public int level() {
 		int level = super.level();
@@ -699,7 +614,7 @@ public class Armor extends EquipableItem {
         int level = super.buffedLvl(lvl);
         if (BuffLevelPoint != Integer.MIN_VALUE)
             return level;
-		if (isEquipped( hero ) || hero.belongings.contains(this)) {
+		if (isEquipped( hero )) {
             // 56-1式天赋：火线补给/饭饱为钢/饱腹护甲（实现见 Type561Talent）
             level = Type561Talent.armorLevelBonus(hero, level);
             //down at 200, 200+300, 200+300+400, ...
@@ -767,6 +682,8 @@ public class Armor extends EquipableItem {
 	
 	@Override
 	public void onHeroGainExp(float levelPercent, Hero hero) {
+		if (inside != null)
+			inside.onHeroGainExp(levelPercent, hero);
 		levelPercent *= Talent.itemIDSpeedFactor(hero, this);
 		if (!levelKnown && isEquipped(hero) && availableUsesToID <= USES_TO_ID/2f) {
 			//gains enough uses to ID over 0.5 levels
@@ -959,7 +876,75 @@ public class Armor extends EquipableItem {
 	}
 
 	public boolean hasGlyph(Class<?extends Glyph> type, Char owner) {
-		return glyph != null && glyph.getClass() == type&& owner.buff(MagicImmune.class) == null;
+		return glyph != null && glyph.getClass() == type&& owner.buff(MagicImmune.class) == null
+				//复合进来的外骨骼刻印同样生效
+				|| inside != null && inside.hasGlyph(type, owner);
+	}
+
+	//统计自身与复合外骨骼的同种刻印等级，同种刻印复合时额外+1
+	public int GlyphLevel(Class<?extends Glyph> type){
+		int lvl = 0;
+		if (glyph != null && glyph.getClass() == type){
+			lvl += buffedLvl();
+		}
+		if (inside != null && inside.glyph != null && inside.glyph.getClass() == type){
+			lvl += inside.buffedLvl();
+			if (glyph == inside.glyph)
+				lvl++;
+		}
+		return lvl;
+	}
+
+	public void guessArmorByGlyph(Class<?extends Glyph> type){
+		guessArmorByGlyph(type, type == Camouflage.class);
+	}
+
+	private void guessArmorByGlyph(Class<?extends Glyph> type, boolean grass){
+		if (glyph != null && glyph.getClass() == type
+				&& buffedLvl() == GlyphLevel(type)) {
+			int lvl = level();
+			if (grass) {
+				if (lvl % 2 == 1)
+					lvl--;
+				guessLevel(lvl, "外骨骼触发迷彩刻印，以隐身回合数判断。");
+			}
+			else
+				guessLevel(lvl, "外骨骼刻印影响回合盘，以完整回合盘触发，精准判断。");
+		}
+		else if (inside != null && inside.glyph != null && inside.glyph.getClass() == type
+				&& inside.buffedLvl() == GlyphLevel(type)) {
+			int lvl = inside.level();
+			if (grass) {
+				if (lvl % 2 == 1)
+					lvl--;
+				guessLevel(lvl, "外骨骼触发迷彩刻印，以隐身回合数判断。");
+			}
+			else
+				guessLevel(lvl, "外骨骼刻印影响回合盘，以完整回合盘触发，精准判断。");
+		}
+		else if (inside != null && inside.glyph != null && inside.glyph.getClass() == type
+				&& glyph != null && glyph.getClass() == type) {
+			if (levelKnown) {
+				int lvl = inside.level();
+				if (grass) {
+					if (GlyphLevel(type) % 2 == 1)
+						lvl--;
+					inside.guessLevel(lvl, "复合外骨骼触发迷彩刻印，以隐身回合数判断。");
+				}
+				else
+					inside.guessLevel(lvl, "复合外骨骼刻印影响回合盘，以完整回合盘触发，精准判断。");
+			}
+			else if (inside.levelKnown) {
+				int lvl = level();
+				if (grass) {
+					if (GlyphLevel(type) % 2 == 1)
+						lvl--;
+					guessLevel(lvl, "复合外骨骼触发迷彩刻印，以隐身回合数判断。");
+				}
+				else
+					guessLevel(lvl, "复合外骨骼刻印影响回合盘，以完整回合盘触发，精准判断。");
+			}
+		}
 	}
 
 	//these are not used to process specific glyph effects, so magic immune doesn't affect them
@@ -1093,10 +1078,10 @@ public class Armor extends EquipableItem {
             revivePersists = true;
         }
 
-        private static final float recover  = 1F;
-        private static final float unEquip  = 2F;
-        private static final float broking   = 1F;
-        private static final float inside   = 0.5F;
+        private static final float equipRecover  = 1F;
+        private static final float unEquipRecover  = 2F;
+        private static final float outsideBroken   = 1F;
+        private static final float insideBroken   = 0.5F;
 
         @Override
         public boolean attachTo( Char target ) {
@@ -1104,16 +1089,13 @@ public class Armor extends EquipableItem {
 
             if (broken > 0 && duration > 0 && CooldownTracker.updateTime > duration){
                 int num = CooldownTracker.updateTime;
-                broken-= 2*(num - duration);
+                broken -= unEquipRecover*(num - duration);
                 broken = Math.max(0, broken);
                 duration = CooldownTracker.updateTime;
             }
             return true;
         }
 
-//        public int icon() {
-//            return BuffIndicator.INVISIBLE;
-//        }
         @Override
         public String toString() {
             return armor().toString();
@@ -1133,22 +1115,19 @@ public class Armor extends EquipableItem {
 			
             Hero hero = (Hero) target;
             boolean isEquip = isEquipped(hero);
-            if (isEquip && (hero.belongings.armor() != null && hero.belongings.SecondArmor() != null)){
-                if (hero.belongings.armor == armor())
-                    armor().broken += broking;
-                else if (hero.belongings.secArmor == armor()) {
-                    armor().broken += inside;
-                }
+            if (isEquip){
+                if (inside != null)
+                    broken += outsideBroken;
+                else if (outside != null)
+                    broken += insideBroken;
+                else
+                    broken -= equipRecover;
             }
-            else if (isEquip) {
-                armor().broken -= recover;
-            }
-            else {
-                armor().broken -= unEquip;
-            }
+            else
+                broken -= unEquipRecover;
             if (broken <= 0){
                 broken = 0;
-                if (hero.belongings.armor() != armor() && hero.belongings.SecondArmor() != armor()) {
+                if (!isEquipped(hero)) {
                     detach();
                 }
             }

@@ -433,7 +433,6 @@ public class DEL extends NPC {
                     case 2:item = Dungeon.hero.belongings.artifact;break;
                     case 3:item = Dungeon.hero.belongings.misc;break;
                     case 4:item = Dungeon.hero.belongings.ring;break;
-                    case 5:item = Dungeon.hero.belongings.secArmor;break;
                 }
                 item.setUnEquipable();
                 item.doDrop((Hero) target);

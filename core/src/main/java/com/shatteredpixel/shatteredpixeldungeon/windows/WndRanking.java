@@ -394,8 +394,19 @@ public class WndRanking extends WndTabbed {
 				else if (item instanceof Ring)
 					rings.add(item);
 			}
-			//强行排序
 			ArrayList<Item> items = new ArrayList<>();
+			for (Item item : armors) {
+				Armor a = (Armor) item;
+				while (a != null) {
+					items.add(a);
+					a = a.inside;
+				}
+			}
+			armors.clear();
+			armors.addAll(items);
+			items.clear();
+
+			//强行排序
 			items.addAll(weapons);
 			items.addAll(armors);
 			items.addAll(artifacts);

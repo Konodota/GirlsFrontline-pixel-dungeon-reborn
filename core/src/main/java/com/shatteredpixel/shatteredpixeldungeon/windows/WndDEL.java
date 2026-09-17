@@ -160,8 +160,6 @@ public class WndDEL extends Window {
                         equip = 3;
                     else if (btnItem1.item == Dungeon.hero.belongings.ring)
                         equip = 4;
-                    else if (btnItem1.item == Dungeon.hero.belongings.secArmor)
-                        equip = 5;
                     else
                         return;
                     del.WorkLoadUsed(DEL.getMissionWorkLoad(mission));

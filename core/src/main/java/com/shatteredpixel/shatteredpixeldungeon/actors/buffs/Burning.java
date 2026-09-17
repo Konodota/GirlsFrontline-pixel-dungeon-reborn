@@ -173,7 +173,7 @@ public class Burning extends Buff implements Hero.Doom {
 	public void reignite( Char ch, float duration ) {
         if (ch.isImmune(Burning.class)&&ch instanceof Hero ) {
             Hero hero = (Hero) ch;
-            if(hero.belongings.hasGlyph(Brimstone.class, hero)) {
+            if(hero.belongings.armor() != null && hero.belongings.armor().hasGlyph(Brimstone.class, hero)) {
                 Barrier barrier = Buff.affect(ch, Barrier.class);
                 barrier.incShield(1);
             }
