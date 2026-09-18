@@ -22,6 +22,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.android;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
@@ -348,5 +349,11 @@ public class AndroidGame extends AndroidApplication {
 	public void onMultiWindowModeChanged(boolean isInMultiWindowMode) {
 		super.onMultiWindowModeChanged(isInMultiWindowMode);
 		support.updateSystemUI();
+	}
+
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+		super.onActivityResult(requestCode, resultCode, data);
+		AndroidPlatformSupport.handleActivityResult(requestCode, resultCode, data);
 	}
 }

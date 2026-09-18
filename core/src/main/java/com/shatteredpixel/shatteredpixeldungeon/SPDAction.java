@@ -168,7 +168,7 @@ public class SPDAction extends GameAction {
 	}
 
 	//we only save/loads keys which differ from the default configuration.
-	private static final String BINDINGS_FILE = "keybinds.dat";
+	public static final String BINDINGS_FILE = "keybinds.dat";
 
 	public static void loadBindings(){
 

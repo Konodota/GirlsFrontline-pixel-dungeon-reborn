@@ -54,6 +54,13 @@ public class Journal {
 		
 		loaded = true;
 	}
+
+	//discards in-memory journal data and reloads it from disk, used by data transfer import
+	public static void reload() {
+		loaded = false;
+		saveNeeded = false;
+		loadGlobal();
+	}
 	
 	//package-private
 	public static boolean saveNeeded = false;

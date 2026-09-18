@@ -38,7 +38,7 @@ import java.util.Iterator;
 
 public class Bones {
 
-	private static final String BONES_FILE	= "bones.dat";
+	public static final String BONES_FILE	= "bones.dat";
 	
 	private static final String LEVEL	= "level";
 	private static final String ITEM	= "item";

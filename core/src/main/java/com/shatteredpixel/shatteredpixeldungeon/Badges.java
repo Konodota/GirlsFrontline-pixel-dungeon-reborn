@@ -225,6 +225,13 @@ public class Badges {
 		local.clear();
 		loadGlobal();
 	}
+
+	//discards in-memory badges and reloads them from disk, used by data transfer import
+	public static void reloadGlobal() {
+		global = null;
+		saveNeeded = false;
+		reset();
+	}
 	
 	public static final String BADGES_FILE	= "badges.dat";
 	private static final String BADGES		= "badges";

@@ -21,14 +21,17 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.windows;
 
+import com.badlogic.gdx.files.FileHandle;
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Chrome;
+import com.shatteredpixel.shatteredpixeldungeon.DataTransfer;
 import com.shatteredpixel.shatteredpixeldungeon.GirlsFrontlinePixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Languages;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
+import com.shatteredpixel.shatteredpixeldungeon.scenes.TitleScene;
 import com.shatteredpixel.shatteredpixeldungeon.services.news.News;
 import com.shatteredpixel.shatteredpixeldungeon.services.updates.Updates;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
@@ -42,6 +45,7 @@ import com.shatteredpixel.shatteredpixeldungeon.ui.Toolbar;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
 import com.watabou.noosa.ColorBlock;
 import com.watabou.noosa.Game;
+import com.watabou.utils.PlatformSupport;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.noosa.ui.Component;
 import com.watabou.utils.DeviceCompat;
@@ -65,6 +69,7 @@ public class WndSettings extends WndTabbed {
 	private DataTab     data;
 	private AudioTab    audio;
 	private LangsTab    langs;
+	private TransferTab transfer;
 
 	public static int last_index = 0;
 
@@ -160,6 +165,20 @@ public class WndSettings extends WndTabbed {
 
 		};
 		add( langsTab );
+
+		transfer = new TransferTab();
+		transfer.setSize(width, 0);
+		height = Math.max(height, transfer.height());
+		add( transfer );
+
+		add( new IconTab(Icons.get(Icons.BACKPACK)){
+			@Override
+			protected void select(boolean value) {
+				super.select(value);
+				transfer.visible = transfer.active = value;
+				if (value) last_index = 5;
+			}
+		});
 
 		resize(width, (int)Math.ceil(height));
 
@@ -1103,6 +1122,202 @@ public class WndSettings extends WndTabbed {
 				height = txtTranifex.bottom();
 			}
 
+		}
+	}
+
+	private static class TransferTab extends Component {
+
+		RenderedTextBlock title;
+		ColorBlock sep1;
+		RedButton btnExport;
+		RedButton btnImport;
+		RenderedTextBlock txtHint;
+
+		@Override
+		protected void createChildren() {
+			title = PixelScene.renderTextBlock(Messages.get(this, "title"), 9);
+			title.hardlight(TITLE_COLOR);
+			add(title);
+
+			sep1 = new ColorBlock(1, 1, 0xFF000000);
+			add(sep1);
+
+			if (GirlsFrontlinePixelDungeon.scene() instanceof GameScene) {
+				txtHint = PixelScene.renderTextBlock(Messages.get(WndDataTransfer.class, "in_game"), 6);
+				add(txtHint);
+				return;
+			}
+
+			btnExport = new RedButton(Messages.get(WndDataTransfer.class, "export")) {
+				@Override
+				protected void onClick() {
+					super.onClick();
+					doExport();
+				}
+			};
+			add(btnExport);
+
+			btnImport = new RedButton(Messages.get(WndDataTransfer.class, "import")) {
+				@Override
+				protected void onClick() {
+					super.onClick();
+					doPickAndImport();
+				}
+			};
+			add(btnImport);
+
+			txtHint = PixelScene.renderTextBlock(Messages.get(WndDataTransfer.class, "desc"), 6);
+			add(txtHint);
+		}
+
+		@Override
+		protected void layout() {
+			title.setPos((width - title.width()) / 2, y + GAP);
+			sep1.size(width, 1);
+			sep1.y = title.bottom() + 2 * GAP;
+
+			float pos = sep1.y + 1 + GAP;
+
+			if (btnExport != null) {
+				btnExport.setRect(0, pos, width, BTN_HEIGHT);
+				pos = btnExport.bottom() + GAP;
+			}
+
+			if (btnImport != null) {
+				btnImport.setRect(0, pos, width, BTN_HEIGHT);
+				pos = btnImport.bottom() + 2 * GAP;
+			}
+
+			if (txtHint != null) {
+				txtHint.maxWidth((int) width);
+				txtHint.setPos(0, pos);
+				pos = txtHint.bottom() + GAP;
+			}
+
+			height = pos;
+		}
+
+		private void doExport() {
+			try {
+				FileHandle zip = DataTransfer.exportData();
+				Game.platform.shareFile(zip);
+			} catch (Exception e) {
+				GirlsFrontlinePixelDungeon.reportException(e);
+				showMsg(Messages.get(WndDataTransfer.class, "export_fail", e.toString()));
+			}
+		}
+
+		private void doPickAndImport() {
+			Game.platform.pickFile(new PlatformSupport.FilePickCallback() {
+				@Override
+				public void onFilePicked(FileHandle file) {
+					showImportConfirm(file);
+				}
+
+				@Override
+				public void onCancel() {
+					//用户取消选择，无需提示
+				}
+			});
+		}
+
+		private void showImportConfirm(final FileHandle archive) {
+			GirlsFrontlinePixelDungeon.scene().addToFront(new Window() {
+				{
+					final int w = PixelScene.landscape() ? WIDTH_L : WIDTH_P;
+					IconTitle title = new IconTitle(Icons.get(Icons.WARNING), Messages.get(WndDataTransfer.class, "confirm_title"));
+					title.setRect(GAP, 0, w - 2 * GAP, 0);
+					add(title);
+					float p = title.bottom() + GAP;
+
+					RenderedTextBlock text = PixelScene.renderTextBlock(
+							Messages.get(WndDataTransfer.class, "confirm_text", archive.name()), 6);
+					text.maxWidth((int)(w - 2 * GAP));
+					text.setPos(GAP, p);
+					add(text);
+					p = text.bottom() + 2 * GAP;
+
+					RedButton btnConfirm = new RedButton(Messages.get(WndDataTransfer.class, "confirm")) {
+						@Override
+						protected void onClick() {
+							hide();
+							doImport(archive);
+						}
+					};
+					btnConfirm.setRect(GAP, p, (w - 3 * GAP) / 2f, BTN_HEIGHT);
+					add(btnConfirm);
+
+					RedButton btnCancel = new RedButton(Messages.get(WndDataTransfer.class, "cancel")) {
+						@Override
+						protected void onClick() {
+							hide();
+						}
+					};
+					btnCancel.setRect(btnConfirm.right() + GAP, p, (w - 3 * GAP) / 2f, BTN_HEIGHT);
+					add(btnCancel);
+
+					resize(w, (int)(btnCancel.bottom() + GAP));
+				}
+			});
+		}
+
+		private void doImport(FileHandle archive) {
+			try {
+				DataTransfer.importData(archive);
+				GirlsFrontlinePixelDungeon.scene().addToFront(new Window() {
+					{
+						final int w = PixelScene.landscape() ? WIDTH_L : WIDTH_P;
+						IconTitle title = new IconTitle(Icons.get(Icons.INFO), Messages.get(WndDataTransfer.class, "import_done_title"));
+						title.setRect(GAP, 0, w - 2 * GAP, 0);
+						add(title);
+						float p = title.bottom() + GAP;
+
+						RenderedTextBlock text = PixelScene.renderTextBlock(Messages.get(WndDataTransfer.class, "import_done"), 6);
+						text.maxWidth((int)(w - 2 * GAP));
+						text.setPos(GAP, p);
+						add(text);
+						p = text.bottom() + 2 * GAP;
+
+						RedButton btnOK = new RedButton(Messages.get(WndDataTransfer.class, "back_to_title")) {
+							@Override
+							protected void onClick() {
+								hide();
+								GirlsFrontlinePixelDungeon.switchNoFade(TitleScene.class);
+							}
+						};
+						btnOK.setRect(GAP, p, w - 2 * GAP, BTN_HEIGHT);
+						add(btnOK);
+
+						resize(w, (int)(btnOK.bottom() + GAP));
+					}
+				});
+			} catch (Exception e) {
+				GirlsFrontlinePixelDungeon.reportException(e);
+				showMsg(Messages.get(WndDataTransfer.class, "import_fail", e.toString()));
+			}
+		}
+
+		private void showMsg(final String text) {
+			GirlsFrontlinePixelDungeon.scene().addToFront(new Window() {
+				{
+					final int w = PixelScene.landscape() ? WIDTH_L : WIDTH_P;
+					RenderedTextBlock msg = PixelScene.renderTextBlock(text, 6);
+					msg.maxWidth((int)(w - 2 * GAP));
+					msg.setPos(GAP, GAP);
+					add(msg);
+
+					RedButton btnOK = new RedButton(Messages.get(WndDataTransfer.class, "confirm")) {
+						@Override
+						protected void onClick() {
+							hide();
+						}
+					};
+					btnOK.setRect(GAP, msg.bottom() + 2 * GAP, w - 2 * GAP, BTN_HEIGHT);
+					add(btnOK);
+
+					resize(w, (int)(btnOK.bottom() + GAP));
+				}
+			});
 		}
 	}
 }

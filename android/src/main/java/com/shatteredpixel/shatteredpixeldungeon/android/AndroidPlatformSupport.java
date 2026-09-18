@@ -22,6 +22,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.android;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
@@ -37,10 +38,12 @@ import androidx.core.content.FileProvider;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.backends.android.AndroidGraphics;
+import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.g2d.PixmapPacker;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.king.app.updater.AppUpdater;
+import com.shatteredpixel.shatteredpixeldungeon.GirlsFrontlinePixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.watabou.noosa.Game;
@@ -399,5 +402,73 @@ public class AndroidPlatformSupport extends PlatformSupport {
 			AndroidGame.instance.getContext().startActivity(intent);
 		}
 	}
-	
+	//返回应用专属外部存储根目录（/sdcard/Android/data/<package>/files/），
+	//无需运行时权限即可读写，用户可通过文件管理器访问，用于放置跨设备转移包。
+	@Override
+	public File getExternalFilesDir(){
+		try {
+			return AndroidGame.instance.getContext().getExternalFilesDir(null);
+		} catch (Exception e) {
+			return null;
+		}
+	}
+
+	//文件选择回调（静态，因为 onActivityResult 是无状态回调）
+	private static FilePickCallback pendingFilePickCallback;
+	private static final int FILE_PICK_REQUEST_CODE = 0x4450; // "DP"
+
+	@Override
+	public void shareFile(FileHandle file) {
+		try {
+			Context context = AndroidGame.instance.getContext();
+			java.io.File actualFile = new java.io.File(file.path());
+			String authority = context.getPackageName() + ".fileprovider";
+			Uri uri = FileProvider.getUriForFile(context, authority, actualFile);
+			Intent intent = new Intent(Intent.ACTION_SEND);
+			intent.setType("application/zip");
+			intent.putExtra(Intent.EXTRA_STREAM, uri);
+			intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+			context.startActivity(Intent.createChooser(intent, "Share Data"));
+		} catch (Exception e) {
+			GirlsFrontlinePixelDungeon.reportException(e);
+		}
+	}
+
+	@Override
+	public void pickFile(FilePickCallback callback) {
+		pendingFilePickCallback = callback;
+		Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+		intent.setType("application/zip");
+		intent.addCategory(Intent.CATEGORY_OPENABLE);
+		AndroidGame.instance.startActivityForResult(intent, FILE_PICK_REQUEST_CODE);
+	}
+
+	//由 AndroidGame.onActivityResult 调用，处理文件选择结果
+	public static void handleActivityResult(int requestCode, int resultCode, Intent data) {
+		if (requestCode != FILE_PICK_REQUEST_CODE || pendingFilePickCallback == null) return;
+		FilePickCallback cb = pendingFilePickCallback;
+		pendingFilePickCallback = null;
+		if (resultCode == Activity.RESULT_OK && data != null && data.getData() != null) {
+			try {
+				Context context = AndroidGame.instance.getContext();
+				java.io.File tempFile = new java.io.File(context.getCacheDir(), "import_temp.zip");
+				java.io.InputStream input = context.getContentResolver().openInputStream(data.getData());
+				java.io.FileOutputStream output = new java.io.FileOutputStream(tempFile);
+				byte[] buffer = new byte[8192];
+				int len;
+				while ((len = input.read(buffer)) != -1) {
+					output.write(buffer, 0, len);
+				}
+				input.close();
+				output.close();
+				cb.onFilePicked(Gdx.files.absolute(tempFile.getAbsolutePath()));
+			} catch (Exception e) {
+				GirlsFrontlinePixelDungeon.reportException(e);
+				cb.onCancel();
+			}
+		} else {
+			cb.onCancel();
+		}
+	}
+
 }

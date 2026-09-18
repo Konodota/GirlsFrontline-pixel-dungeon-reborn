@@ -22,6 +22,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.desktop;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.g2d.PixmapPacker;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
@@ -32,6 +33,8 @@ import com.watabou.utils.PlatformSupport;
 import com.watabou.utils.Point;
 
 import java.awt.Desktop;
+import java.awt.FileDialog;
+import java.awt.Frame;
 import java.io.File;
 import java.net.URI;
 import java.util.HashMap;
@@ -108,6 +111,34 @@ public class DesktopPlatformSupport extends PlatformSupport {
 			}
 		}
 		return false;
+	}
+
+	@Override
+	public void shareFile(FileHandle file) {
+		FileDialog fd = new FileDialog((Frame) null, "Save Data Transfer Package", FileDialog.SAVE);
+		fd.setFile(file.name());
+		fd.setFilenameFilter((dir, name) -> name.toLowerCase().endsWith(".zip"));
+		fd.setVisible(true);
+		String dir = fd.getDirectory();
+		String name = fd.getFile();
+		if (dir != null && name != null) {
+			File target = new File(dir, name);
+			file.copyTo(Gdx.files.absolute(target.getAbsolutePath()));
+		}
+	}
+
+	@Override
+	public void pickFile(final FilePickCallback callback) {
+		FileDialog fd = new FileDialog((Frame) null, "Select Data Transfer Package", FileDialog.LOAD);
+		fd.setFilenameFilter((dir, name) -> name.toLowerCase().endsWith(".zip"));
+		fd.setVisible(true);
+		String dir = fd.getDirectory();
+		String name = fd.getFile();
+		if (dir != null && name != null) {
+			callback.onFilePicked(Gdx.files.absolute(new File(dir, name).getAbsolutePath()));
+		} else {
+			callback.onCancel();
+		}
 	}
 
 	/* FONT SUPPORT */

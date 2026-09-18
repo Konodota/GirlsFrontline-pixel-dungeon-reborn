@@ -42,6 +42,10 @@ public class GameSettings {
 	public static void set( Preferences prefs ){
 		GameSettings.prefs = prefs;
 	}
+	//direct access to the underlying preferences, used by data backup/transfer tools
+	public static Preferences getPrefs() {
+		return get();
+	}
 	
 	public static boolean contains( String key ){
 		return get().contains( key );

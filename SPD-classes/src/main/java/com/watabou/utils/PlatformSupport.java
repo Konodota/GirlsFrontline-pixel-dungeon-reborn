@@ -22,6 +22,7 @@
 package com.watabou.utils;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.PixmapPacker;
@@ -232,6 +233,30 @@ public abstract class PlatformSupport {
 
 	public boolean openURI( String uri ){
 		return Gdx.net.openURI( uri );
+	}
+
+	//返回应用专属外部存储根目录（如 Android 的 getExternalFilesDir(null)）。
+	//该目录无需运行时权限即可读写，且用户可通过文件管理器访问，适合放置需要跨设备转移的数据。
+	//不支持的平台返回 null（如桌面端，此时使用默认文件存储路径即可）。
+	public File getExternalFilesDir(){
+		return null;
+	}
+
+	//文件选择回调接口
+	public interface FilePickCallback {
+		void onFilePicked(FileHandle file);
+		void onCancel();
+	}
+
+	//分享/导出文件——Android 端弹出系统分享面板，桌面端弹出文件保存对话框。
+	//默认实现：不支持，直接返回。
+	public void shareFile(FileHandle file) {
+	}
+
+	//打开文件选择器让用户选择导入文件——Android 端用 SAF，桌面端用文件打开对话框。
+	//默认实现：不支持，回调 onCancel。
+	public void pickFile(FilePickCallback callback) {
+		callback.onCancel();
 	}
 
 }
