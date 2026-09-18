@@ -570,7 +570,7 @@ public class Armor extends EquipableItem {
             add = Math.min( WarriorTalent.secondArmorEvasionCap(hero, tier()), add);
 		evasion += add;
 		if (inside != null)
-			evasion = evasionFactor(owner, evasion);
+			evasion = inside.evasionFactor(owner, evasion);
 		return evasion;
 	}
 	
