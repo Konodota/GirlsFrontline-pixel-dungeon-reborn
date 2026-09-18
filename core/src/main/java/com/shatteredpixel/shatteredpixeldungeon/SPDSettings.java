@@ -377,6 +377,9 @@ public class SPDSettings extends GameSettings {
 	public static int getSpecialDay_PlayTimesNeed(){
 		return getInt(Special_Day+"PlayTimes", 0);
 	}
+	public static void setSpecialDay_PlayTimesNeed(int value){
+		put(Special_Day + "PlayTimes", value);
+	}
 	public static int getSpecialDay_Month(){
 		return getInt(Special_Day+"Month", -2);
 	}

@@ -100,7 +100,7 @@ public class ItemSpriteSheet {
 		assignItemRect(DEWDROP,     9, 9);
 		assignItemRect(PETAL,       8,  8);
 		assignItemRect(SANDBAG,     10, 10);
-		assignItemRect(SPIRIT_ARROW,11, 11);
+		assignItemRect(SPIRIT_ARROW,16, 16);
 		
 		assignItemRect(GUIDE_PAGE,  10, 11);
 		assignItemRect(ALCH_PAGE,   10, 11);
@@ -842,7 +842,7 @@ public class ItemSpriteSheet {
 	public static final  int GUN562    	       =GUN561_NUKE+3;
 	public static final  int GUN562ACCESSORIES =GUN561_NUKE+4;
 	public static final  int GSH18             =GUN561_NUKE+5;
-	public static final  int MEDICALKET        =GUN561_NUKE+6;
+	public static final  int MEDICAL_KET        =GUN561_NUKE+6;
 	public static final  int GUN64             =GUN561_NUKE+7;
 	public static final  int NIGHTVISIONHELMET =GUN561_NUKE+8;
 	public static final  int NIGHTVISIONHELMET2=GUN561_NUKE+9;
@@ -855,7 +855,7 @@ public class ItemSpriteSheet {
 		assignItemRect(GUN562,             16, 15);
 		assignItemRect(GUN562ACCESSORIES,  16, 15);
 		assignItemRect(GSH18,              16, 16);
-		assignItemRect(MEDICALKET,         15, 14);
+		assignItemRect(MEDICAL_KET,         15, 14);
 		assignItemRect(GUN64,              12, 16);
 		assignItemRect(NIGHTVISIONHELMET,  16, 16);
 		assignItemRect(NIGHTVISIONHELMET2, 16, 16);
@@ -867,12 +867,16 @@ public class ItemSpriteSheet {
 
 	//M4A1 行
 	private static final int GUN_M4A1         =xy(1, 39);
+
+
 	public static final  int M4A1              =GUN_M4A1+3;
 	public static final  int P90               =GUN_M4A1+4;
 	
+	private static final int MEDICAL_KETICON        =GUN_M4A1+6;
 	static {
 	    assignItemRect(M4A1,              16, 16);
 	    assignItemRect(P90,               16, 16);
+	    assignItemRect(MEDICAL_KETICON, 15, 12);
 	}
 	//16 free slots
 

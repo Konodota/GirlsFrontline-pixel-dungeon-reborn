@@ -73,6 +73,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.armor.ClothArmor;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.CloakOfShadows;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.RedBook;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.RedBookOld;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.MedicalKit;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Gun561;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Gun561Old;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.FoodPouch;
@@ -395,6 +396,11 @@ public enum HeroClass {
 		// 开局获得疫苗磁盘
 		new ScrollOfRemoveCurse().identify().collect();
 		Dungeon.quickslot.setSlot(0, hero.belongings.getItem(ScrollOfRemoveCurse.class));
+
+		// GSH-18 专属神器：便携医疗包
+		MedicalKit medicalKit = new MedicalKit();
+		(hero.belongings.artifact = medicalKit).identify();
+		hero.belongings.artifact.activate(hero);
 	}
 
 	private static void initHK416( Hero hero ) {

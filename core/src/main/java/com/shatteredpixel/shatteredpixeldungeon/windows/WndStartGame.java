@@ -504,8 +504,12 @@ public class WndStartGame extends Window {
 					// 每行显示4个角色，多出来的换行
 					int row = cl.ordinal() / 4;
 					int col = cl.ordinal() % 4;
-					if (cl == HeroClass.HK416) {
-						//TODO:占位HK416暂用现在HK416形象的头像（隼槽位），待新角色立绘完成后替换
+					if (cl == HeroClass.HUNTRESS) {
+						// 隼的立绘位于丹德莱前一格（第2行第3列）
+						row = 1;
+						col = 2;
+					} else if (cl == HeroClass.HK416) {
+						//TODO:占位HK416暂用原隼槽位的头像，待新角色立绘完成后替换
 						row = 0;
 						col = 3;
 					}

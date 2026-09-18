@@ -240,15 +240,33 @@ public class SecondTitleScene extends PixelScene {
 							+Messages.format("\n节日文本为：\n" +
 							"%s", message),
 					2,
-					Messages.titleCase("修改月份"),
-					Messages.titleCase("修改日期"),
-					Messages.titleCase("修改文本"),
-					Messages.titleCase("选择蛋糕款式"),
-					Messages.titleCase("保存"));
+					cakeOptions());
 			this.month = month;
 			this.day = day;
 			this.message = message;
 			this.cakeStyle = cakeStyle;
+		}
+
+		// debug 模式下末尾追加「清空所需对局」按钮，方便调试
+		private static String[] cakeOptions(){
+			if (DeviceCompat.isDebug()){
+				return new String[]{
+						Messages.titleCase("修改月份"),
+						Messages.titleCase("修改日期"),
+						Messages.titleCase("修改文本"),
+						Messages.titleCase("选择蛋糕款式"),
+						Messages.titleCase("保存"),
+						Messages.titleCase("清空对局数")
+				};
+			} else {
+				return new String[]{
+						Messages.titleCase("修改月份"),
+						Messages.titleCase("修改日期"),
+						Messages.titleCase("修改文本"),
+						Messages.titleCase("选择蛋糕款式"),
+						Messages.titleCase("保存")
+				};
+			}
 		}
 
 		public WndCake(WndCake wndCake) {
@@ -333,6 +351,11 @@ public class SecondTitleScene extends PixelScene {
 					}
 					SPDSettings.setSpecialDay_Message(message);
 					SPDSettings.setSpecialDay_CakeStyle(cakeStyle);
+				} else if (index == 5 && DeviceCompat.isDebug()) {
+					// debug：清空所需完成的对局数量，立即可修改节日日期
+					SPDSettings.setSpecialDay_PlayTimesNeed(0);
+					hide();
+					GirlsFrontlinePixelDungeon.scene().addToFront(new WndCake(WndCake.this));
 				}
 			}
 		}

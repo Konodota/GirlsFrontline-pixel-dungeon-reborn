@@ -34,6 +34,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.LockedFloor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Belongings;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.herotalent.WarriorTalent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Wraith;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.DirectableAlly;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Ghost;
@@ -721,6 +722,12 @@ public class DriedRose extends Artifact {
 			int block = 0;
 			if (rose != null && rose.armor != null){
 				block += Random.NormalIntRange( rose.armor.DRMin(), rose.armor.DRMax());
+				// 副护甲（坚守）格挡，同 Hero.drRoll；GhostHero 非英雄，上限取玩家的坚守天赋
+				if (rose.armor.inside != null) {
+					int armDr = Random.NormalIntRange( rose.armor.inside.DRMin(), rose.armor.inside.DRMax());
+					armDr = Math.min( armDr, WarriorTalent.secondArmorDRCap( Dungeon.hero, rose.armor.inside.tier()));
+					if (armDr > 0) block += armDr;
+				}
 			}
 			if (rose != null && rose.weapon != null){
 				block += Random.NormalIntRange( 0, rose.weapon.defenseFactor( this ));
