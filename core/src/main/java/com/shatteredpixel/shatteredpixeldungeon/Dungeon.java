@@ -216,15 +216,16 @@ public class Dungeon {
 
     public static ArrayList<Class> HolidayFood = new ArrayList<>(Arrays.asList(Pasty.class, XMasSugar.class)) ;
     public static void resetGenerator(){
+        boolean hasZongziTalent = Dungeon.hero.hasTalentB(Talent.Type56One_FOOD) || Dungeon.hero.hasTalentB(Talent.BETTER_FOOD);
         for (int j = 0; j < Generator.Category.FOOD.classes.length; j++) {
             if (Generator.Category.FOOD.classes[j] == Food.class ) {
-                if (Dungeon.hero.heroClass==HeroClass.TYPE561) {
+                if (hasZongziTalent) {
                     Generator.Category.FOOD.probs[j] = 2;
                 }else {
                     Generator.Category.FOOD.probs[j] = 4;
                 }
             }else if( Generator.Category.FOOD.classes[j] == SaltyZongzi.class){
-                if (Dungeon.hero.heroClass==HeroClass.TYPE561) {
+                if (hasZongziTalent) {
                     Generator.Category.FOOD.probs[j] = 2;
                 }else {
                     Generator.Category.FOOD.probs[j] = 0;

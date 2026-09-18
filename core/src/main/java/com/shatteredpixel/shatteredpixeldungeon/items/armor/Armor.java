@@ -278,7 +278,6 @@ public class Armor extends EquipableItem {
 				actions.add(AC_INSIDE);
 		}
 		else {
-			actions.add(AC_UNEQUIP);
 			actions.remove(AC_EQUIP);
 			if (!outside.unEquipable(hero)) {
 				actions.remove(AC_DROP);
